@@ -9,6 +9,10 @@ export const NARRATION_VOICES: { id: NarrationVoiceId; label: string }[] = [
   { id: 'Puck', label: 'Diego (Neural)' },
 ];
 
+// Minimal 1-sample silent PCM WAV to unlock HTMLAudioElement inside user gesture
+const SILENT_WAV_DATA_URI =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+
 interface UseSlideNarrationOptions {
   script: string;
   slideKey: string;
@@ -24,7 +28,7 @@ function getCacheKey(voice: NarrationVoiceId, slideKey: string) {
   return `${voice}::${slideKey}`;
 }
 
-async function fetchNeuralAudioUrl(
+async function fetchStaticOrNeuralAudioUrl(
   slideKey: string,
   text: string,
   voiceName: NarrationVoiceId
@@ -37,21 +41,45 @@ async function fetchNeuralAudioUrl(
   if (inflight) return inflight;
 
   const promise = (async () => {
+    // 1. Try pre-generated static Gemini Neural MP3 first (instant, works on Cloudflare too)
+    try {
+      const staticRes = await fetch(`/audio/${voiceName}/${slideKey}.mp3`);
+      const contentType = staticRes.headers.get('content-type')?.toLowerCase() ?? '';
+      if (staticRes.ok && contentType.includes('audio')) {
+        const mp3Blob = await staticRes.blob();
+        if (mp3Blob.size > 1024) {
+          const url = URL.createObjectURL(mp3Blob);
+          blobUrlCache.set(key, url);
+          return url;
+        }
+      }
+    } catch {
+      // Static track not present for this voice; proceed to live Gemini TTS API
+    }
+
+    // 2. Dynamically synthesize via server-side Gemini 3.8 Neural TTS
     const res = await fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slideKey, text, voiceName }),
     });
 
+    const apiContentType = res.headers.get('content-type')?.toLowerCase() ?? '';
     if (!res.ok) {
-      let msg = `Error TTS (${res.status})`;
-      try {
-        const errJson = (await res.json()) as { error?: string; code?: string };
-        if (errJson?.error) msg = errJson.error;
-      } catch {
-        // Ignore parse error
+      let msg = `Servicio de voz no disponible (${res.status})`;
+      if (apiContentType.includes('application/json')) {
+        try {
+          const errJson = (await res.json()) as { error?: string };
+          if (errJson?.error) msg = errJson.error;
+        } catch {
+          // Ignore JSON parse errors
+        }
       }
       throw new Error(msg);
+    }
+
+    if (!apiContentType.includes('audio')) {
+      throw new Error('El servidor no devolvió un formato de audio válido.');
     }
 
     const wavBlob = await res.blob();
@@ -66,6 +94,33 @@ async function fetchNeuralAudioUrl(
   } finally {
     inFlightAudioFetches.delete(key);
   }
+}
+
+function splitIntoShortSentences(text: string, maxLen = 130): string[] {
+  const rawSentences = text
+    .split(/(?<=[.!?…])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const chunks: string[] = [];
+  for (const sentence of rawSentences) {
+    if (sentence.length <= maxLen) {
+      chunks.push(sentence);
+    } else {
+      const subParts = sentence.split(/(?<=[,;—])\s+/);
+      let current = '';
+      for (const part of subParts) {
+        if ((current + ' ' + part).trim().length <= maxLen) {
+          current = (current + ' ' + part).trim();
+        } else {
+          if (current) chunks.push(current);
+          current = part;
+        }
+      }
+      if (current) chunks.push(current);
+    }
+  }
+  return chunks.length ? chunks : [text];
 }
 
 function pickBestSpanishBrowserVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
@@ -103,6 +158,7 @@ export function useSlideNarration({
 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [autoNarrate, setAutoNarrate] = useState(false);
   const [rate, setRate] = useState<number>(1.0);
   const [voice, setVoice] = useState<NarrationVoiceId>('Kore');
@@ -112,7 +168,9 @@ export function useSlideNarration({
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const keepAliveRef = useRef<number | null>(null);
+  const unlockedRef = useRef<boolean>(false);
+  const unlockPromiseRef = useRef<Promise<void> | null>(null);
+  const watchdogRef = useRef<number | null>(null);
   const activeSessionRef = useRef<number>(0);
   const onNarrationEndRef = useRef(onNarrationEnd);
   const voiceRef = useRef<NarrationVoiceId>(voice);
@@ -130,7 +188,6 @@ export function useSlideNarration({
     rateRef.current = rate;
   }, [rate]);
 
-  // Load fallback browser voices asynchronously if ever needed
   useEffect(() => {
     if (!browserTtsSupported) return;
     const load = () => {
@@ -142,7 +199,6 @@ export function useSlideNarration({
     return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
   }, [browserTtsSupported]);
 
-  // Create shared HTMLAudioElement once
   useEffect(() => {
     const audio = new Audio();
     audio.preload = 'auto';
@@ -154,23 +210,52 @@ export function useSlideNarration({
     };
   }, []);
 
+  const clearWatchdog = useCallback(() => {
+    if (watchdogRef.current) {
+      window.clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
+  }, []);
+
+  // Synchronously unlock the shared HTMLAudioElement inside a user click/keypress
+  const unlockAudio = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || unlockedRef.current) return;
+    if (unlockPromiseRef.current) return;
+
+    audio.src = SILENT_WAV_DATA_URI;
+    audio.volume = 0;
+    const p = audio
+      .play()
+      .then(() => {
+        audio.pause();
+        audio.volume = 1;
+        unlockedRef.current = true;
+        setAutoplayBlocked(false);
+      })
+      .catch(() => {
+        audio.volume = 1;
+      })
+      .finally(() => {
+        unlockPromiseRef.current = null;
+      });
+    unlockPromiseRef.current = p;
+  }, []);
+
   const stop = useCallback(() => {
     activeSessionRef.current += 1;
-
-    if (keepAliveRef.current) {
-      window.clearInterval(keepAliveRef.current);
-      keepAliveRef.current = null;
-    }
+    clearWatchdog();
 
     const audio = audioRef.current;
     if (audio) {
       audio.onended = null;
       audio.onerror = null;
+      audio.onloadedmetadata = null;
       audio.pause();
       try {
         audio.currentTime = 0;
       } catch {
-        // Ignore seek reset error before load
+        // Ignore seek errors
       }
     }
 
@@ -180,78 +265,86 @@ export function useSlideNarration({
 
     setIsLoadingAudio(false);
     setIsSpeaking(false);
-  }, [browserTtsSupported]);
+  }, [browserTtsSupported, clearWatchdog]);
 
   const speakWithBrowserFallback = useCallback(
     (sessionId: number, textToSpeak: string, playbackRate: number) => {
       if (!browserTtsSupported || !textToSpeak) {
         setIsSpeaking(false);
+        onNarrationEndRef.current?.();
         return;
       }
+
       setEngineMode('browser');
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = 'es-CL';
-      utterance.rate = playbackRate;
-      utterance.pitch = 1.0;
+      setIsSpeaking(true);
+      setShowCaption(true);
 
+      const chunks = splitIntoShortSentences(textToSpeak, 130);
       const best = pickBestSpanishBrowserVoice(browserVoices);
-      if (best) {
-        utterance.voice = best;
-        utterance.lang = best.lang;
-      }
+      let chunkIdx = 0;
 
-      utterance.onstart = () => {
-        if (activeSessionRef.current === sessionId) {
-          setIsSpeaking(true);
-          setShowCaption(true);
-        }
-      };
-
-      utterance.onend = () => {
-        if (activeSessionRef.current === sessionId) {
-          if (keepAliveRef.current) {
-            window.clearInterval(keepAliveRef.current);
-            keepAliveRef.current = null;
-          }
+      const finishChunk = () => {
+        if (activeSessionRef.current !== sessionId) return;
+        clearWatchdog();
+        chunkIdx += 1;
+        if (chunkIdx < chunks.length) {
+          speakNextChunk();
+        } else {
           setIsSpeaking(false);
           onNarrationEndRef.current?.();
         }
       };
 
-      utterance.onerror = () => {
-        if (activeSessionRef.current === sessionId) {
-          if (keepAliveRef.current) {
-            window.clearInterval(keepAliveRef.current);
-            keepAliveRef.current = null;
+      const speakNextChunk = () => {
+        if (activeSessionRef.current !== sessionId) return;
+        const chunkText = chunks[chunkIdx];
+        const utterance = new SpeechSynthesisUtterance(chunkText);
+        utterance.lang = best?.lang || 'es-CL';
+        if (best) utterance.voice = best;
+        utterance.rate = playbackRate;
+        utterance.pitch = 1.0;
+
+        let settled = false;
+        const settle = () => {
+          if (settled) return;
+          settled = true;
+          finishChunk();
+        };
+
+        utterance.onend = settle;
+        utterance.onerror = settle;
+
+        // Per-chunk anti-freeze watchdog (prevents Chrome speechSynthesis hang)
+        const estimatedMs = Math.max(4000, Math.round((chunkText.length / 11) * 1000 / playbackRate) + 3500);
+        clearWatchdog();
+        watchdogRef.current = window.setTimeout(() => {
+          if (activeSessionRef.current === sessionId) {
+            window.speechSynthesis.cancel();
+            settle();
           }
-          setIsSpeaking(false);
-        }
+        }, estimatedMs);
+
+        window.speechSynthesis.speak(utterance);
       };
 
-      setIsSpeaking(true);
-      setShowCaption(true);
-      window.speechSynthesis.speak(utterance);
-
-      keepAliveRef.current = window.setInterval(() => {
-        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
-        }
-      }, 10000);
+      window.speechSynthesis.cancel();
+      speakNextChunk();
     },
-    [browserTtsSupported, browserVoices]
+    [browserTtsSupported, browserVoices, clearWatchdog]
   );
 
   const speakCurrent = useCallback(
     async (customRate?: number, customVoice?: NarrationVoiceId) => {
       if (!script) return;
 
+      unlockAudio();
       stop();
       const sessionId = activeSessionRef.current;
       const targetVoice = customVoice ?? voiceRef.current;
       const targetRate = customRate ?? rateRef.current;
 
       setErrorNotice(null);
+      setAutoplayBlocked(false);
       setShowCaption(true);
 
       const cacheKey = getCacheKey(targetVoice, slideKey);
@@ -262,12 +355,15 @@ export function useSlideNarration({
       }
 
       try {
-        const audioUrl = await fetchNeuralAudioUrl(slideKey, script, targetVoice);
+        if (unlockPromiseRef.current) {
+          await unlockPromiseRef.current;
+        }
+        const audioUrl = await fetchStaticOrNeuralAudioUrl(slideKey, script, targetVoice);
         if (activeSessionRef.current !== sessionId) return;
 
-        // Pre-fetch next slide in background so transitions are seamless
+        // Pre-fetch next slide/chapter silently in background
         if (nextSlideKey && nextScript) {
-          fetchNeuralAudioUrl(nextSlideKey, nextScript, targetVoice).catch(() => {});
+          fetchStaticOrNeuralAudioUrl(nextSlideKey, nextScript, targetVoice).catch(() => {});
         }
 
         const audio = audioRef.current;
@@ -276,18 +372,32 @@ export function useSlideNarration({
         setIsLoadingAudio(false);
         setEngineMode('gemini');
 
+        audio.volume = 1;
         audio.src = audioUrl;
         audio.playbackRate = targetRate;
 
-        audio.onended = () => {
+        const finishAudio = () => {
           if (activeSessionRef.current === sessionId) {
+            clearWatchdog();
             setIsSpeaking(false);
             onNarrationEndRef.current?.();
           }
         };
 
+        audio.onloadedmetadata = () => {
+          if (activeSessionRef.current !== sessionId) return;
+          if (Number.isFinite(audio.duration) && audio.duration > 0) {
+            clearWatchdog();
+            const safeMs = Math.round(((audio.duration / targetRate) + 4) * 1000);
+            watchdogRef.current = window.setTimeout(finishAudio, safeMs);
+          }
+        };
+
+        audio.onended = finishAudio;
+
         audio.onerror = () => {
           if (activeSessionRef.current === sessionId) {
+            clearWatchdog();
             setIsSpeaking(false);
             setIsLoadingAudio(false);
             speakWithBrowserFallback(sessionId, script, targetRate);
@@ -296,34 +406,44 @@ export function useSlideNarration({
 
         setIsSpeaking(true);
         await audio.play();
+        unlockedRef.current = true;
       } catch (err) {
         if (activeSessionRef.current !== sessionId) return;
+        clearWatchdog();
         setIsLoadingAudio(false);
-        const msg =
-          err instanceof Error
-            ? err.message
-            : 'Voz neural no disponible; usando voz local.';
-        setErrorNotice(msg);
+
+        // If browser blocked autoplay (NotAllowedError), keep neural audio and prompt 1 click instead of robotic fallback!
+        const errName = (err as { name?: string })?.name || '';
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errName === 'NotAllowedError' || /not allowed|user didn't interact/i.test(errMsg)) {
+          setIsSpeaking(false);
+          setEngineMode('gemini');
+          setAutoplayBlocked(true);
+          return;
+        }
+
+        setErrorNotice(errMsg);
         speakWithBrowserFallback(sessionId, script, targetRate);
       }
     },
-    [nextScript, nextSlideKey, script, slideKey, speakWithBrowserFallback, stop]
+    [clearWatchdog, nextScript, nextSlideKey, script, slideKey, speakWithBrowserFallback, stop, unlockAudio]
   );
 
   const togglePlay = useCallback(() => {
+    unlockAudio();
     if (isSpeaking || isLoadingAudio) {
       stop();
     } else {
       void speakCurrent();
     }
-  }, [isLoadingAudio, isSpeaking, speakCurrent, stop]);
+  }, [isLoadingAudio, isSpeaking, speakCurrent, stop, unlockAudio]);
 
   // Automatically narrate when slideKey changes if autoNarrate is enabled
   useEffect(() => {
     if (autoNarrate) {
       const t = window.setTimeout(() => {
         void speakCurrent();
-      }, 280);
+      }, 240);
       return () => {
         window.clearTimeout(t);
         stop();
@@ -334,10 +454,10 @@ export function useSlideNarration({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideKey, autoNarrate]);
 
-  // Cleanup on unmount
   useEffect(() => stop, [stop]);
 
   const cycleRate = useCallback(() => {
+    unlockAudio();
     const next = rate === 1.0 ? 1.12 : rate === 1.12 ? 0.94 : 1.0;
     setRate(next);
     rateRef.current = next;
@@ -347,9 +467,10 @@ export function useSlideNarration({
     } else if (isSpeaking) {
       void speakCurrent(next);
     }
-  }, [engineMode, isSpeaking, rate, speakCurrent]);
+  }, [engineMode, isSpeaking, rate, speakCurrent, unlockAudio]);
 
   const cycleVoice = useCallback(() => {
+    unlockAudio();
     const idx = NARRATION_VOICES.findIndex((v) => v.id === voice);
     const nextVoice = NARRATION_VOICES[(idx + 1) % NARRATION_VOICES.length].id;
     setVoice(nextVoice);
@@ -357,12 +478,13 @@ export function useSlideNarration({
     if (isSpeaking || isLoadingAudio || autoNarrate) {
       void speakCurrent(undefined, nextVoice);
     }
-  }, [autoNarrate, isLoadingAudio, isSpeaking, speakCurrent, voice]);
+  }, [autoNarrate, isLoadingAudio, isSpeaking, speakCurrent, unlockAudio, voice]);
 
   return {
     isSupported: true,
     isSpeaking,
     isLoadingAudio,
+    autoplayBlocked,
     autoNarrate,
     setAutoNarrate,
     rate,
@@ -374,6 +496,7 @@ export function useSlideNarration({
     errorNotice,
     showCaption,
     setShowCaption,
+    unlockAudio,
     togglePlay,
     speakCurrent,
     stop,

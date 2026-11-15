@@ -230,6 +230,7 @@ export default function App() {
   );
 
   const toggleAutoPresentation = useCallback(() => {
+    narration.unlockAudio();
     clearAutoAdvanceTimer();
     setPresentationCompleted(false);
     if (autoPresent) {
@@ -248,6 +249,7 @@ export default function App() {
   }, [autoPresent, clearAutoAdvanceTimer, narration]);
 
   const startKeynoteFromBeginning = useCallback(() => {
+    narration.unlockAudio();
     clearAutoAdvanceTimer();
     setPresentationCompleted(false);
     setHighlightedRank(null);
@@ -881,6 +883,19 @@ export default function App() {
                 )}
               </div>
 
+              {narration.autoplayBlocked && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    narration.unlockAudio();
+                    void narration.speakCurrent();
+                  }}
+                  className="inline-flex h-6 items-center gap-1 rounded-md bg-amber-500 px-2.5 text-[11px] font-semibold text-white hover:bg-amber-600"
+                >
+                  <Volume2 className="h-3 w-3" /> Activar Audio
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => {
@@ -901,7 +916,7 @@ export default function App() {
             </div>
             {narration.errorNotice && narration.engineMode === 'browser' && (
               <p className="mt-1 text-[11px] text-amber-500">
-                Usando voz local de respaldo ({narration.errorNotice})
+                Voz alternativa activa para esta pista (puedes volver a Sofía Neural HD cuando quieras).
               </p>
             )}
             <p className="mt-1.5 line-clamp-2 leading-relaxed">

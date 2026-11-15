@@ -44,61 +44,79 @@ function createGenAIClient(): GoogleGenAI | null {
   });
 }
 
+async function callTtsModel(
+  ai: GoogleGenAI,
+  model: 'gemini-3.8-flash-lite-tts' | 'gemini-3.8-flash-tts',
+  text: string,
+  voiceName: string,
+  style: string
+): Promise<Buffer> {
+  const response = await ai.models.generateContent({
+    model,
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text,
+            speechMetadata: {
+              style: style || DEFAULT_STYLE,
+            },
+          },
+        ],
+      },
+    ],
+    config: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName,
+          },
+        },
+      },
+    },
+  });
+
+  const base64Audio =
+    response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+  if (!base64Audio) {
+    throw new Error('Gemini TTS no devolvió datos de audio.');
+  }
+
+  return Buffer.from(base64Audio, 'base64');
+}
+
 async function synthesizeWithRetry(
   ai: GoogleGenAI,
   text: string,
   voiceName: string,
-  style: string,
-  attempts = 3
+  style: string
 ): Promise<Buffer> {
+  const models: Array<'gemini-3.8-flash-lite-tts' | 'gemini-3.8-flash-tts'> = [
+    'gemini-3.8-flash-lite-tts',
+    'gemini-3.8-flash-tts',
+  ];
   let lastError: unknown;
 
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash-lite-tts',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text,
-                speechMetadata: {
-                  style: style || DEFAULT_STYLE,
-                },
-              },
-            ],
-          },
-        ],
-        config: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName,
-              },
-            },
-          },
-        },
-      });
-
-      const base64Audio =
-        response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-      if (!base64Audio) {
-        throw new Error('Gemini TTS no devolvió datos de audio.');
-      }
-
-      return Buffer.from(base64Audio, 'base64');
-    } catch (err) {
-      lastError = err;
-      const status = (err as { status?: number })?.status;
-      // Do not retry non-transient auth/validation errors
-      if (status === 400 || status === 401 || status === 403 || status === 404) {
-        throw err;
-      }
-      if (i < attempts - 1) {
-        await new Promise((r) => setTimeout(r, 600 * Math.pow(2, i)));
+  for (const model of models) {
+    for (let i = 0; i < 2; i++) {
+      try {
+        return await callTtsModel(ai, model, text, voiceName, style);
+      } catch (err) {
+        lastError = err;
+        const status = (err as { status?: number })?.status;
+        if (status === 400 || status === 401 || status === 403 || status === 404) {
+          throw err;
+        }
+        // On 429 quota exceeded, switch immediately to the next TTS model instead of looping
+        if (status === 429) {
+          break;
+        }
+        if (i === 0) {
+          await new Promise((r) => setTimeout(r, 500));
+        }
       }
     }
   }
