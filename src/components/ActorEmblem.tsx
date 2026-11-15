@@ -168,12 +168,12 @@ export const ActorEmblem: React.FC<ActorEmblemProps> = ({ kind, color, size = 38
           </g>
         );
 
-      case 'persona-diputado':
-        // Miniatura retrato Diputado Daniel Manouchehri (terno oscuro + corbata + insignia)
+      case 'persona-ali':
+        // Miniatura retrato Alcalde de Coquimbo Ali Manouchehri (traje oscuro + banda alcaldicia)
         return (
           <g>
             <path d="M10 33c0-5.5 4.2-9 10-9s10 3.5 10 9" fill="#1E293B" stroke={color} strokeWidth="1.5" />
-            <path d="M18 24.5l2 6.5 2-6.5" fill="#FF2E93" />
+            <path d="M15 24.5l10 8.5" stroke="#10B981" strokeWidth="2.6" strokeLinecap="round" />
             <circle cx="20" cy="16" r="5.2" fill="#FED7AA" />
             <path d="M14.8 14.5c0-3.8 2.4-6 5.2-6s5.2 2.2 5.2 6c-1.8-1.2-8.6-1.2-10.4 0z" fill="#0F172A" />
             <path d="M16.5 19c1.2 1.6 5.8 1.6 7 0" fill="none" stroke="#334155" strokeWidth="1.4" strokeLinecap="round" />

@@ -420,7 +420,7 @@ export const PRESENTATION_CHOREOGRAPHY: Record<string, ChoreographyCue[]> = {
     },
     {
       atProgress: 0.66,
-      focusBadge: '#8 Manouchehri · #9 Daniela Norambuena',
+      focusBadge: '#8 Ali Manouchehri · #9 Daniela Norambuena',
       highlightRank: 8,
       camera: { position: [5.0, 4.7, 8.6], target: [4.6, 2.45, -0.8] },
     },

@@ -16,7 +16,7 @@ export type ActorEmblemKind =
   | 'oro-illapel'
   | 'cordillera-salamanca'
   | 'persona-alcaldesa'
-  | 'persona-diputado'
+  | 'persona-ali'
   | 'persona-ahumada'
   | 'persona-denis'
   | 'persona-vega';
@@ -146,17 +146,17 @@ export const GLOBAL_ACTORS_RANKING: GlobalActorProfile[] = [
   },
   {
     rank: 8,
-    name: 'Daniel Manouchehri',
+    name: 'Ali Manouchehri',
     handle: '@manouchehri19',
     category: 'personaje',
-    categoryLabel: 'Liderazgo Político',
-    territory: 'Coquimbo · Regional',
-    emblemKind: 'persona-diputado',
+    categoryLabel: 'Alcaldía Coquimbo',
+    territory: 'Coquimbo',
+    emblemKind: 'persona-ali',
     color: '#FF2E93',
     followersLabel: '86,7k',
     primaryMetricLabel: '25,1k likes',
     erLabel: '3,51% ER',
-    highlightNote: '2.788,9 likes/post · Máxima cercanía por pieza',
+    highlightNote: 'Alcalde de Coquimbo · 2.788,9 likes/post',
     scoreIndex: 68,
   },
   {

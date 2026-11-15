@@ -242,11 +242,11 @@ function drawEmblemArtwork(
     }
 
     case 'persona-alcaldesa':
-    case 'persona-diputado':
+    case 'persona-ali':
     case 'persona-ahumada':
     case 'persona-denis':
     case 'persona-vega': {
-      // Stylized character bust portrait with civic sash / tie + distinct motif
+      // Stylized character bust portrait with civic mayor sash + distinct motif
       ctx.fillStyle = '#0F172A';
       ctx.strokeStyle = accent;
       ctx.lineWidth = 3.5;
@@ -255,23 +255,18 @@ function drawEmblemArtwork(
       ctx.fill();
       ctx.stroke();
 
-      // Sash or Tie
-      if (kind === 'persona-diputado') {
-        ctx.fillStyle = '#FF2E93';
-        ctx.beginPath();
-        ctx.moveTo(-4, 10);
-        ctx.lineTo(4, 10);
-        ctx.lineTo(0, 27);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        ctx.strokeStyle = kind === 'persona-alcaldesa' ? '#0284C7' : accent;
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(-12, 11);
-        ctx.lineTo(11, 29);
-        ctx.stroke();
-      }
+      // Civic sash
+      ctx.strokeStyle =
+        kind === 'persona-alcaldesa'
+          ? '#0284C7'
+          : kind === 'persona-ali'
+            ? '#10B981'
+            : accent;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(-12, 11);
+      ctx.lineTo(11, 29);
+      ctx.stroke();
 
       // Hair / Head silhouette
       if (kind === 'persona-alcaldesa') {
@@ -287,7 +282,7 @@ function drawEmblemArtwork(
       ctx.fill();
 
       if (kind !== 'persona-alcaldesa') {
-        ctx.fillStyle = kind === 'persona-diputado' ? '#0F172A' : '#334155';
+        ctx.fillStyle = kind === 'persona-ali' ? '#0F172A' : '#334155';
         ctx.beginPath();
         ctx.arc(0, -12, 12, Math.PI, 0);
         ctx.fill();

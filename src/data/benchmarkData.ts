@@ -103,7 +103,7 @@ export interface BenchmarkFollowerRank {
 export const BENCHMARK_FOLLOWERS_TOP: BenchmarkFollowerRank[] = [
   { rank: 1, handle: '@muni_laserena', followers: 142000, followersLabel: '142k', role: 'Municipio Capital', color: '#00F0FF' },
   { rank: 2, handle: '@municipalidaddecoquimbo', followers: 120000, followersLabel: '120k', role: 'Municipio Puerto', color: '#10B981' },
-  { rank: 3, handle: '@manouchehri19', followers: 86700, followersLabel: '86,7k', role: 'Liderazgo Político', color: '#FF2E93' },
+  { rank: 3, handle: '@manouchehri19', followers: 86700, followersLabel: '86,7k', role: 'Alcaldía Coquimbo', color: '#FF2E93' },
   { rank: 4, handle: '@daniela.laserena', followers: 66300, followersLabel: '66,3k', role: 'Alcaldía La Serena', color: '#FFB800' },
   { rank: 5, handle: '@muniovalle', followers: 48800, followersLabel: '48,8k', role: 'Municipio Limarí', color: '#00F0FF' },
   { rank: 6, handle: '@munivicuna', followers: 30500, followersLabel: '30,5k', role: 'Municipio Elqui', color: '#10B981' },
@@ -590,7 +590,7 @@ export const EXECUTIVE_DUAL_SUMMARY: ExecutiveReportSummaryCard[] = [
       { label: 'Engagement Medio', value: '1,97%' },
       { label: 'Crecimiento Neto', value: '+3,09%' },
     ],
-    leaders: 'Coquimbo (15,5%) · La Serena (10,1%) · Manouchehri (3,51% ER)',
+    leaders: 'Coquimbo (15,5%) · La Serena (10,1%) · Ali Manouchehri (3,51% ER)',
     keyInsight:
       '75,4% de sentimiento positivo. Migrar carruseles (49,4% vol.) a Reels cortos triplica el ER (2,08%) y Vie–Dom 21–00h lidera en eficacia.',
   },

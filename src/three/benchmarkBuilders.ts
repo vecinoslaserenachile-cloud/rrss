@@ -1266,7 +1266,7 @@ export function buildBenchmarkCh6GlobalActors(): BuiltSlideScene {
     {
       title: 'Hito Territorial · Coquimbo',
       metric: 'Cruz del Tercer Milenio',
-      subtitle: 'Municipio Puerto y liderazgo parlamentario de la conurbación',
+      subtitle: 'Municipio Puerto y liderazgo alcaldicio de la conurbación',
       color: '#10B981',
     },
     cruzV
