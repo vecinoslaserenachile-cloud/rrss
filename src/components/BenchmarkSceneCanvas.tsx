@@ -11,6 +11,7 @@ import {
   buildBenchmarkCh3OutliersScatter,
   buildBenchmarkCh4FormatsSentiment,
   buildBenchmarkCh5Heatmap,
+  buildBenchmarkCh6DualSummary,
 } from '../three/benchmarkBuilders';
 import { createDarkTelemetryGridTexture } from '../three/proceduralTextures';
 import { BuiltSlideScene, HoverPayload } from '../three/slideBuilders';
@@ -57,14 +58,14 @@ function applyPortraitFraming(
   outTarget.set(...presetTarget);
   if (aspect < 0.92) {
     const zoom = isDirectorShot
-      ? Math.min(1.55, Math.max(1.12, 0.88 / Math.max(aspect, 0.45)))
+      ? Math.min(1.88, Math.max(1.25, 1.06 / Math.max(aspect, 0.45)))
       : Math.min(2.2, Math.max(1.22, 1.05 / Math.max(aspect, 0.42)));
     _tempDelta.copy(outPos).sub(outTarget).multiplyScalar(zoom);
     if (!isDirectorShot) {
       outTarget.x *= 0.25;
     }
     if (hudVisible) {
-      outTarget.y = Math.max(-0.4, outTarget.y - (isDirectorShot ? 0.65 : 1.3));
+      outTarget.y = Math.max(-0.2, outTarget.y - (isDirectorShot ? 0.95 : 1.3));
     } else {
       outTarget.y = Math.max(0.2, outTarget.y - 0.15);
     }
@@ -288,6 +289,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
         buildBenchmarkCh3OutliersScatter(),
         buildBenchmarkCh4FormatsSentiment(),
         buildBenchmarkCh5Heatmap(),
+        buildBenchmarkCh6DualSummary(),
       ];
 
       builtChapters.forEach((c, idx) => {

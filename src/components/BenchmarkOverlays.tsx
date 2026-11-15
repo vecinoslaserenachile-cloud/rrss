@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowRight, Cpu, Home, Play, Sparkles } from 'lucide-react';
 import {
   BENCHMARK_CHAPTERS,
   BENCHMARK_FOLLOWERS_TOP,
@@ -9,6 +10,7 @@ import {
   BENCHMARK_RECOMMENDATIONS,
   BENCHMARK_SENTIMENT,
   CONURBANO_DUEL_DATA,
+  EXECUTIVE_DUAL_SUMMARY,
 } from '../data/benchmarkData';
 import { ConurbanoDuelMode } from '../three/benchmarkBuilders';
 
@@ -19,6 +21,7 @@ interface BenchmarkOverlaysProps {
   highlightedRank: number | null;
   onHoverRank: (rank: number | null) => void;
   hudCollapsed: boolean;
+  onNavigateReportStart?: (report: 'ecosistema' | 'benchmark', startKeynote?: boolean) => void;
 }
 
 export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
@@ -28,10 +31,11 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
   highlightedRank,
   onHoverRank,
   hudCollapsed,
+  onNavigateReportStart,
 }) => {
   if (hudCollapsed) return null;
 
-  const meta = BENCHMARK_CHAPTERS[activeChapter];
+  const meta = BENCHMARK_CHAPTERS[activeChapter] ?? BENCHMARK_CHAPTERS[0];
 
   return (
     <div className="pointer-events-none fixed inset-0 z-20 flex flex-col pt-16 pb-[4.5rem] lg:justify-between lg:px-10 lg:pt-20 lg:pb-24">
@@ -90,6 +94,31 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
             <div className="mt-0.5 text-xs text-slate-300">
               Acaparado por las Top 5 cuentas
             </div>
+          </div>
+        )}
+
+        {/* Chapter 6 Desktop Unified Callout & Full Keynote Replay */}
+        {activeChapter === 6 && onNavigateReportStart && (
+          <div
+            data-html2canvas-ignore="true"
+            className="dark-glass-panel pointer-events-auto hidden items-center gap-3 rounded-2xl px-4 py-3 lg:flex"
+          >
+            <div>
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#10B981]">
+                <Sparkles className="h-3.5 w-3.5" /> Regla Unificada 2026
+              </div>
+              <div className="font-display text-sm font-bold text-white">
+                Reels Cortos (2,5x–3x ER) + Ventana 21:00h
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigateReportStart('ecosistema', true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#10B981] px-3.5 py-2 text-xs font-semibold text-[#060B19] transition-colors hover:bg-emerald-400 whitespace-nowrap"
+            >
+              <Play className="h-3.5 w-3.5 fill-current" />
+              Repetir Keynote
+            </button>
           </div>
         )}
       </div>
@@ -437,6 +466,106 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
                 </p>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* CHAPTER 6 (CAPÍTULO 07): RESUMEN EJECUTIVO DE AMBOS REPORTES */}
+        {activeChapter === 6 && (
+          <div className="pointer-events-auto space-y-3">
+            <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+              {EXECUTIVE_DUAL_SUMMARY.map((rep) => {
+                const isFirst = rep.id === 'ecosistema';
+                return (
+                  <div
+                    key={rep.id}
+                    className="dark-glass-panel flex flex-col justify-between rounded-2xl p-4 sm:p-5"
+                  >
+                    <div>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span
+                          className="font-mono-tabular text-[11px] font-bold tracking-wider uppercase"
+                          style={{ color: rep.accent }}
+                        >
+                          {rep.badge}
+                        </span>
+                        <span className="text-[11px] text-slate-400">{rep.period}</span>
+                      </div>
+
+                      <h2 className="font-display mt-1 text-base font-bold text-white sm:text-lg">
+                        {rep.title}
+                      </h2>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {rep.stats.map((st) => (
+                          <div
+                            key={st.label}
+                            className="rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-2"
+                          >
+                            <div className="text-[10px] text-slate-400">{st.label}</div>
+                            <div
+                              className="font-mono-tabular mt-0.5 text-xs font-bold sm:text-sm"
+                              style={{ color: rep.accent }}
+                            >
+                              {st.value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-2.5 rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2 text-xs">
+                        <div className="font-semibold text-white">{rep.leaders}</div>
+                        <p className="mt-1 leading-relaxed text-slate-300">{rep.keyInsight}</p>
+                      </div>
+                    </div>
+
+                    {onNavigateReportStart && (
+                      <div data-html2canvas-ignore="true" className="mt-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => onNavigateReportStart(rep.id)}
+                          className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
+                            isFirst
+                              ? 'bg-[#38BDF8] text-[#060B19] hover:bg-sky-300'
+                              : 'border border-[#FF2E93]/60 bg-[#FF2E93]/20 text-white hover:bg-[#FF2E93]'
+                          }`}
+                        >
+                          {isFirst ? (
+                            <Home className="h-3.5 w-3.5" />
+                          ) : (
+                            <Cpu className="h-3.5 w-3.5" />
+                          )}
+                          <span>
+                            {isFirst
+                              ? 'Ir al Inicio del Reporte 1 (Ecosistema · Lám. 01)'
+                              : 'Ir al Inicio del Reporte 2 (Benchmark · Cap. 01)'}
+                          </span>
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {onNavigateReportStart && (
+              <div
+                data-html2canvas-ignore="true"
+                className="dark-glass-panel flex items-center justify-between gap-2 rounded-xl px-3.5 py-2.5 lg:hidden"
+              >
+                <span className="text-[11px] font-medium text-slate-300">
+                  Regla: Reels 3x + Ventana 21:00h
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onNavigateReportStart('ecosistema', true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#10B981] px-3 py-1.5 text-xs font-semibold text-[#060B19]"
+                >
+                  <Play className="h-3 w-3 fill-current" />
+                  Repetir Keynote
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

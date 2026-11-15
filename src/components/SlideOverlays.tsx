@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowUpDown, Search, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowUpDown, Cpu, Home, LayoutGrid, Search, Sparkles } from 'lucide-react';
 import {
   ACTORS_LIKES_DATA,
   AccountCategory,
@@ -24,6 +24,7 @@ interface SlideOverlaysProps {
   onHoverRank: (rank: number | null) => void;
   hudCollapsed: boolean;
   instantNumbers?: boolean;
+  onNavigateAction?: (action: 'restart-eco' | 'go-benchmark' | 'go-summary') => void;
 }
 
 const AnimatedInteger: React.FC<{ target: number; triggerKey: number; instant?: boolean }> = ({
@@ -59,6 +60,7 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
   onHoverRank,
   hudCollapsed,
   instantNumbers = false,
+  onNavigateAction,
 }) => {
   const slideMeta = SLIDES[activeSlide];
 
@@ -1023,12 +1025,44 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
               </div>
             </div>
 
-            <div className="hidden lg:col-span-7 lg:flex items-end justify-end">
+            <div className="pointer-events-auto flex flex-col justify-end gap-2.5 lg:col-span-7 lg:items-end">
+              {onNavigateAction && (
+                <div
+                  data-html2canvas-ignore="true"
+                  className="glass-panel flex flex-wrap items-center gap-2 rounded-2xl p-2.5"
+                >
+                  <button
+                    type="button"
+                    onClick={() => onNavigateAction('restart-eco')}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-900/12 bg-white px-3 py-2 text-xs font-semibold text-[#0F172A] transition-colors hover:bg-slate-100"
+                  >
+                    <Home className="h-3.5 w-3.5 text-[#0284C7]" />
+                    Volver al inicio (Lám. 01)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateAction('go-benchmark')}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#060B19] px-3 py-2 text-xs font-semibold text-[#00F0FF] transition-colors hover:bg-[#0F172A]"
+                  >
+                    <Cpu className="h-3.5 w-3.5" />
+                    Ir a Benchmark 3D (Cap. 01)
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateAction('go-summary')}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#0284C7] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-sky-700"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    Ver Resumen Final
+                  </button>
+                </div>
+              )}
               <div
                 data-html2canvas-ignore="true"
-                className="glass-panel pointer-events-auto rounded-xl px-4 py-2.5 text-xs text-slate-600"
+                className="glass-panel hidden rounded-xl px-4 py-2 text-xs text-slate-600 lg:block"
               >
-                Pasa el cursor sobre cualquier rebanada del pastel 3D o fila de la leyenda para extraer el segmento y comparar su variación frente al promedio.
+                Pasa el cursor sobre cualquier rebanada del pastel 3D o fila de la leyenda para extraer el segmento.
               </div>
             </div>
           </div>

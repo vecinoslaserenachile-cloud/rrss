@@ -8,6 +8,8 @@ import {
   EyeOff,
   FileDown,
   Focus,
+  Home,
+  LayoutGrid,
   Loader2,
   Orbit,
   Play,
@@ -288,6 +290,58 @@ export default function App() {
     }
   }, [activeReport, activeSlide, clearAutoAdvanceTimer, narration]);
 
+  const navigateToReportStart = useCallback(
+    (target: ReportType, startKeynote = false) => {
+      clearAutoAdvanceTimer();
+      setPresentationCompleted(false);
+      setHighlightedRank(null);
+      setFreeOrbitMode(false);
+      const targetIdx = target === 'ecosistema' ? activeSlide : activeBenchChapter;
+      setActiveReport(target);
+      if (target === 'ecosistema') {
+        setActiveSlide(0);
+      } else {
+        setActiveBenchChapter(0);
+      }
+      setResetCameraNonce((n) => n + 1);
+      if (startKeynote) {
+        narration.unlockAudio();
+        setAutoPresent(true);
+        narration.setAutoNarrate(true);
+        if (activeReport === target && targetIdx === 0 && !narration.isSpeaking) {
+          void narration.speakCurrent();
+        }
+      } else {
+        setAutoPresent(false);
+      }
+    },
+    [activeBenchChapter, activeReport, activeSlide, clearAutoAdvanceTimer, narration]
+  );
+
+  const jumpToFinalSummary = useCallback(() => {
+    clearAutoAdvanceTimer();
+    setPresentationCompleted(false);
+    setHighlightedRank(null);
+    setFreeOrbitMode(false);
+    setAutoPresent(false);
+    setActiveReport('benchmark');
+    setActiveBenchChapter(BENCHMARK_CHAPTERS.length - 1);
+    setResetCameraNonce((n) => n + 1);
+  }, [clearAutoAdvanceTimer]);
+
+  const handleSlideOverlayAction = useCallback(
+    (action: 'restart-eco' | 'go-benchmark' | 'go-summary') => {
+      if (action === 'restart-eco') {
+        navigateToReportStart('ecosistema');
+      } else if (action === 'go-benchmark') {
+        navigateToReportStart('benchmark');
+      } else {
+        jumpToFinalSummary();
+      }
+    },
+    [jumpToFinalSummary, navigateToReportStart]
+  );
+
   const goToIndex = useCallback(
     (index: number) => {
       clearAutoAdvanceTimer();
@@ -493,6 +547,7 @@ export default function App() {
               highlightedRank={highlightedRank}
               onHoverRank={setHighlightedRank}
               hudCollapsed={hudCollapsed}
+              onNavigateReportStart={navigateToReportStart}
             />
           </>
         ) : (
@@ -514,6 +569,7 @@ export default function App() {
               onHoverRank={setHighlightedRank}
               hudCollapsed={hudCollapsed}
               instantNumbers={isExporting}
+              onNavigateAction={handleSlideOverlayAction}
             />
           </>
         )}
@@ -708,6 +764,42 @@ export default function App() {
             }`}
           >
             <ChevronRight className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigateToReportStart(activeReport)}
+            title="Volver al inicio de esta presentación"
+            aria-label="Volver al inicio"
+            className={`inline-flex h-8 items-center gap-1 rounded-xl px-2 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+              currentIdx === 0
+                ? isBenchmark
+                  ? 'text-[#00F0FF] bg-[#00F0FF]/10'
+                  : 'text-[#0284C7] bg-[#0284C7]/10'
+                : isBenchmark
+                  ? 'text-slate-200 hover:bg-white/10 hover:text-white'
+                  : 'text-slate-700 hover:bg-slate-900/8 hover:text-[#0F172A]'
+            }`}
+          >
+            <Home className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Inicio</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={jumpToFinalSummary}
+            title="Ir a la diapositiva final con el Resumen de Ambos Reportes"
+            aria-label="Resumen Final"
+            className={`inline-flex h-8 items-center gap-1 rounded-xl px-2 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+              isBenchmark && activeBenchChapter === BENCHMARK_CHAPTERS.length - 1
+                ? 'bg-[#10B981] text-[#060B19]'
+                : isBenchmark
+                  ? 'text-slate-200 hover:bg-white/10 hover:text-[#10B981]'
+                  : 'text-slate-700 hover:bg-slate-900/8 hover:text-[#0284C7]'
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Resumen</span>
           </button>
 
           <div

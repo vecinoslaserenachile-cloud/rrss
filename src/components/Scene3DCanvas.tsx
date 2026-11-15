@@ -64,14 +64,14 @@ function applyPortraitFraming(
   outTarget.set(...presetTarget);
   if (aspect < 0.92) {
     const zoom = isDirectorShot
-      ? Math.min(1.52, Math.max(1.12, 0.86 / Math.max(aspect, 0.45)))
+      ? Math.min(1.86, Math.max(1.24, 1.05 / Math.max(aspect, 0.45)))
       : Math.min(2.15, Math.max(1.22, 1.02 / Math.max(aspect, 0.42)));
     _tempDelta.copy(outPos).sub(outTarget).multiplyScalar(zoom);
     if (!isDirectorShot) {
       outTarget.x *= 0.25;
     }
     if (hudVisible) {
-      outTarget.y = Math.max(-0.4, outTarget.y - (isDirectorShot ? 0.65 : 1.25));
+      outTarget.y = Math.max(-0.2, outTarget.y - (isDirectorShot ? 0.95 : 1.25));
     } else {
       outTarget.y = Math.max(0.2, outTarget.y - 0.15);
     }

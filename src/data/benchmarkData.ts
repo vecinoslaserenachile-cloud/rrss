@@ -62,6 +62,15 @@ export const BENCHMARK_CHAPTERS: BenchmarkChapterMeta[] = [
     subtitle:
       'Oportunidad nocturna y de fin de semana: menor saturación de publicaciones y máxima eficacia de respuesta.',
   },
+  {
+    id: 6,
+    slug: 'resumen-comparativo',
+    shortLabel: 'Resumen',
+    kicker: 'Capítulo 07 · Síntesis Final Integrada',
+    title: 'Resumen Ejecutivo de Ambos Reportes',
+    subtitle:
+      'Comparativa consolidada entre el Ecosistema Regional de Medios (31 días) y el Benchmark de Cuentas Públicas (28 días).',
+  },
 ];
 
 export const BENCHMARK_KPIS = [
@@ -531,3 +540,50 @@ export const BENCHMARK_RECOMMENDATIONS = [
     accent: '#10B981',
   },
 ];
+
+export interface ExecutiveReportSummaryCard {
+  id: 'ecosistema' | 'benchmark';
+  badge: string;
+  title: string;
+  period: string;
+  accent: string;
+  stats: { label: string; value: string }[];
+  leaders: string;
+  keyInsight: string;
+}
+
+export const EXECUTIVE_DUAL_SUMMARY: ExecutiveReportSummaryCard[] = [
+  {
+    id: 'ecosistema',
+    badge: 'REPORTE 01 · ECOSISTEMA INSTAGRAM',
+    title: 'Medios, Comunidad e Influencia Regional',
+    period: '14 Oct – 14 Nov 2026 (31 días · 9 láminas)',
+    accent: '#38BDF8',
+    stats: [
+      { label: 'Cuentas Auditadas', value: '20 (22 actores)' },
+      { label: 'Me Gusta Totales', value: '3,13M' },
+      { label: 'Engagement Medio', value: '1,06%' },
+      { label: 'Crecimiento Neto', value: '+2,63%' },
+    ],
+    leaders: 'Mi Radio (36,3%) · El Día (24,7%) · Papaya TV (28% ER máx.)',
+    keyInsight:
+      'Solo 6 actores concentran el 90,3% de los Me Gusta. Los Reels duplican el retorno de las gráficas estáticas (1,36% vs 0,53%).',
+  },
+  {
+    id: 'benchmark',
+    badge: 'REPORTE 02 · BENCHMARK 3D',
+    title: 'Municipios y Liderazgos Públicos',
+    period: 'Últimos 28 días · 7 capítulos',
+    accent: '#FF2E93',
+    stats: [
+      { label: 'Cuentas Públicas', value: '26 cuentas' },
+      { label: 'Interacciones', value: '478,5k (1.965 posts)' },
+      { label: 'Engagement Medio', value: '1,97%' },
+      { label: 'Crecimiento Neto', value: '+3,09%' },
+    ],
+    leaders: 'Coquimbo (15,5%) · La Serena (10,1%) · Manouchehri (3,51% ER)',
+    keyInsight:
+      '75,4% de sentimiento positivo. Migrar carruseles (49,4% vol.) a Reels cortos triplica el ER (2,08%) y Vie–Dom 21–00h lidera en eficacia.',
+  },
+];
+

@@ -945,3 +945,210 @@ export function buildBenchmarkCh5Heatmap(): BuiltSlideScene {
     cameraPreset: { position: [1.1, 6.2, 10.6], target: [0.3, 1.4, 0.1] },
   };
 }
+
+/**
+ * CHAPTER 6 (CAPÍTULO 07): Resumen Ejecutivo Dual — Comparativa 3D Reporte 1 vs Reporte 2
+ */
+export function buildBenchmarkCh6DualSummary(): BuiltSlideScene {
+  const group = new THREE.Group();
+  const hoverables: THREE.Object3D[] = [];
+  const gyroRings: THREE.Mesh[] = [];
+  const floatingNodes: { obj: THREE.Object3D; baseY: number; phase: number; speed: number }[] = [];
+
+  // Twin holographic podiums bridged in center
+  const leftDeck = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.35, 2.55, 0.18, 48),
+    new THREE.MeshStandardMaterial({ color: '#0F172A', roughness: 0.35, metalness: 0.72 })
+  );
+  leftDeck.position.set(-2.7, 0.09, 0);
+  group.add(leftDeck);
+
+  const leftRing = new THREE.Mesh(
+    new THREE.TorusGeometry(2.38, 0.035, 16, 64),
+    new THREE.MeshBasicMaterial({ color: '#38BDF8' })
+  );
+  leftRing.rotation.x = Math.PI / 2;
+  leftRing.position.set(-2.7, 0.19, 0);
+  group.add(leftRing);
+
+  const rightDeck = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.35, 2.55, 0.18, 48),
+    new THREE.MeshStandardMaterial({ color: '#0F172A', roughness: 0.35, metalness: 0.72 })
+  );
+  rightDeck.position.set(2.7, 0.09, 0);
+  group.add(rightDeck);
+
+  const rightRing = new THREE.Mesh(
+    new THREE.TorusGeometry(2.38, 0.035, 16, 64),
+    new THREE.MeshBasicMaterial({ color: '#FF2E93' })
+  );
+  rightRing.rotation.x = Math.PI / 2;
+  rightRing.position.set(2.7, 0.19, 0);
+  group.add(rightRing);
+
+  // Connecting floor telemetry bridge
+  const bridge = new THREE.Mesh(
+    new THREE.BoxGeometry(3.2, 0.06, 0.7),
+    makeNeonPhysicalMaterial('#10B981', 0.32, 0.1)
+  );
+  bridge.position.set(0, 0.05, 0);
+  group.add(bridge);
+
+  // Left Cluster: Reporte 1 Ecosistema Instagram (Medios & Comunidad)
+  const ecoMetrics = [
+    {
+      label: 'R1 · 3,13M Likes',
+      pct: '31 días',
+      h: 3.1,
+      x: -3.4,
+      z: 0.45,
+      color: '#0284C7',
+      title: 'Reporte 01 · Medios y Comunidad',
+      metric: '3,13M Me Gusta totales',
+      subtitle: '20 cuentas monitoreadas · @miradiols (36,3%) y @eldia.cl (24,7%)',
+    },
+    {
+      label: 'R1 · 1,06% ER',
+      pct: '+2,63%',
+      h: 1.85,
+      x: -2.0,
+      z: -0.45,
+      color: '#38BDF8',
+      title: 'Reporte 01 · Eficiencia Media',
+      metric: '1,06% ER · +2,63% crec.',
+      subtitle: 'Reels logran 1,36% vs 0,53% imágenes · Papaya TV pico 28%',
+    },
+  ];
+
+  ecoMetrics.forEach((m, i) => {
+    const { barGroup, topRing } = createDarkCylinderBar({
+      radius: 0.4,
+      height: m.h,
+      color: m.color,
+      position: [m.x, 0.18, m.z],
+      payload: {
+        title: m.title,
+        metric: m.metric,
+        subtitle: m.subtitle,
+        color: m.color,
+      },
+      hoverables,
+      addTopRing: i === 0,
+      labelName: m.label,
+      labelPct: m.pct,
+      labelScale: 0.78,
+    });
+    group.add(barGroup);
+    if (topRing) {
+      floatingNodes.push({ obj: topRing, baseY: topRing.position.y, phase: 0.5, speed: 1.8 });
+    }
+  });
+
+  // Right Cluster: Reporte 2 Benchmark 3D (Municipios & Autoridades)
+  const benchMetrics = [
+    {
+      label: 'R2 · 478,5k Int.',
+      pct: '28 días',
+      h: 2.55,
+      x: 2.0,
+      z: 0.45,
+      color: '#FF2E93',
+      title: 'Reporte 02 · Benchmark Público',
+      metric: '478,5k interacciones · 26 ctas',
+      subtitle: '1.965 publicaciones · @municipalidaddecoquimbo lidera con 15,5%',
+    },
+    {
+      label: 'R2 · 1,97% ER',
+      pct: '+3,09%',
+      h: 2.95,
+      x: 3.4,
+      z: -0.45,
+      color: '#00F0FF',
+      title: 'Reporte 02 · Crecimiento & Tono',
+      metric: '1,97% ER · +3,09% crec.',
+      subtitle: '75,4% sentimiento positivo · Reels alcanzan 2,08% ER (3x)',
+    },
+  ];
+
+  benchMetrics.forEach((m, i) => {
+    const { barGroup, topRing } = createDarkCylinderBar({
+      radius: 0.4,
+      height: m.h,
+      color: m.color,
+      position: [m.x, 0.18, m.z],
+      payload: {
+        title: m.title,
+        metric: m.metric,
+        subtitle: m.subtitle,
+        color: m.color,
+      },
+      hoverables,
+      addTopRing: i === 1,
+      labelName: m.label,
+      labelPct: m.pct,
+      labelScale: 0.78,
+    });
+    group.add(barGroup);
+    if (topRing) {
+      floatingNodes.push({ obj: topRing, baseY: topRing.position.y, phase: 1.4, speed: 1.8 });
+    }
+  });
+
+  // Central Convergence Sphere + Dual Gyro Rings ("Regla de Oro: Reels + 21:00 hrs")
+  const centerCore = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.62, 2),
+    makeNeonPhysicalMaterial('#10B981', 0.55, 0.15)
+  );
+  centerCore.position.set(0, 2.55, 0);
+  group.add(centerCore);
+  floatingNodes.push({ obj: centerCore, baseY: 2.55, phase: 0, speed: 1.4 });
+
+  registerDarkHoverable(
+    centerCore,
+    hoverables,
+    {
+      title: 'Conclusión Estratégica Unificada',
+      metric: 'Reels (2,5x–3x ER) + 21:00 hrs',
+      subtitle: 'Ambas auditorías confirman migrar piezas estáticas a Reels cortos en horario nocturno y fin de semana',
+      color: '#10B981',
+    },
+    centerCore
+  );
+
+  const g1 = new THREE.Mesh(
+    new THREE.TorusGeometry(1.18, 0.03, 16, 64),
+    makeNeonPhysicalMaterial('#10B981', 0.6, 0)
+  );
+  g1.position.set(0, 2.55, 0);
+  g1.rotation.set(0.6, 0.2, 0.3);
+  group.add(g1);
+  gyroRings.push(g1);
+
+  const g2 = new THREE.Mesh(
+    new THREE.TorusGeometry(1.48, 0.025, 16, 64),
+    makeNeonPhysicalMaterial('#00F0FF', 0.5, 0)
+  );
+  g2.position.set(0, 2.55, 0);
+  g2.rotation.set(-0.7, 0.5, 0.8);
+  group.add(g2);
+  gyroRings.push(g2);
+
+  const convergenceBadge = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: createDarkFloatingBadgeTexture('Síntesis Dual 2026', 'Reels 3x · 21:00h', '#10B981'),
+      transparent: true,
+      depthWrite: false,
+    })
+  );
+  convergenceBadge.scale.set(2.1, 0.56, 1);
+  convergenceBadge.position.set(0, 4.1, 0);
+  group.add(convergenceBadge);
+
+  return {
+    group,
+    hoverables,
+    animatedObjects: { gyroRings, floatingNodes },
+    cameraPreset: { position: [0, 5.1, 11.8], target: [0, 2.25, 0] },
+  };
+}
+
