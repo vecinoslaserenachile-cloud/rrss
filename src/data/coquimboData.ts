@@ -10,12 +10,12 @@ export interface SlideMeta {
 export const SLIDES: SlideMeta[] = [
   {
     id: 0,
-    slug: 'portada',
-    shortLabel: 'Portada',
-    kicker: 'Estudio Ecosistema Instagram · 14 oct – 14 nov 2026',
-    title: 'Conversación Digital en la Región de Coquimbo',
+    slug: 'resumen-ejecutivo',
+    shortLabel: 'Resumen',
+    kicker: 'Capítulo 01 · Dashboard de Resumen Ejecutivo (14 oct – 14 nov 2026)',
+    title: 'Dashboard de Resumen Ejecutivo',
     subtitle:
-      'Radiografía ejecutiva del rendimiento editorial, alcance comunitario, hitos virales y pulso ciudadano en 20 cuentas clave.',
+      'Indicadores clave de rendimiento (KPIs), crecimiento neto, engagement rate medio y participación de los 20 perfiles monitoreados en Coquimbo.',
   },
   {
     id: 1,
@@ -488,6 +488,42 @@ export const LIKES_PIE_DATA: LikesPieSlice[] = [
     sharePct: 9.74,
     color: '#64748B',
     role: 'Suma combinada de actores #7 al #22',
+  },
+];
+
+export interface EcosystemSegmentSummary {
+  segment: AccountCategory;
+  accounts: number;
+  likes: number;
+  likesLabel: string;
+  sharePct: number;
+  color: string;
+}
+
+export const ECOSYSTEM_SEGMENT_SUMMARY: EcosystemSegmentSummary[] = [
+  {
+    segment: 'Medio Informativo',
+    accounts: 8,
+    likes: 2367600,
+    likesLabel: '2,37M',
+    sharePct: 75.6,
+    color: '#0284C7',
+  },
+  {
+    segment: 'Comunidad / Viral',
+    accounts: 8,
+    likes: 673000,
+    likesLabel: '673,0k',
+    sharePct: 21.5,
+    color: '#10B981',
+  },
+  {
+    segment: 'Institucional / Figura',
+    accounts: 4,
+    likes: 91100,
+    likesLabel: '91,1k',
+    sharePct: 2.9,
+    color: '#0F172A',
   },
 ];
 

@@ -3,6 +3,7 @@ import { ArrowUpDown, Search, Sparkles } from 'lucide-react';
 import {
   ACTORS_LIKES_DATA,
   AccountCategory,
+  ECOSYSTEM_SEGMENT_SUMMARY,
   FORMATS_DATA,
   HASHTAGS_DATA,
   LIKES_PIE_DATA,
@@ -121,6 +122,21 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
           </p>
         </div>
 
+        {/* Slide 0 Top Right Quick Summary Badge */}
+        {activeSlide === 0 && (
+          <div className="glass-panel pointer-events-auto rounded-2xl px-5 py-3.5 text-right">
+            <div className="text-xs font-medium text-slate-500">
+              Cobertura del Estudio
+            </div>
+            <div className="font-mono-tabular mt-0.5 text-2xl font-bold text-[#0284C7]">
+              <AnimatedInteger target={20} instant={instantNumbers} triggerKey={activeSlide} /> perfiles
+            </div>
+            <div className="mt-0.5 text-xs text-slate-500">
+              31 días · 6,0 posts/día por cuenta
+            </div>
+          </div>
+        )}
+
         {/* Slide-specific Top Right Compact Callout where helpful */}
         {activeSlide === 2 && (
           <div className="glass-panel pointer-events-auto rounded-2xl px-5 py-3.5">
@@ -207,108 +223,97 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
 
       {/* Slide Content Bento Layouts */}
       <div className="mt-auto">
-        {/* SLIDE 0: PORTADA 3D */}
+        {/* SLIDE 0: DASHBOARD DE RESUMEN EJECUTIVO */}
         {activeSlide === 0 && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-            <div className="pointer-events-auto flex flex-col gap-3 md:col-span-5 lg:col-span-4">
-              <div className="glass-panel rounded-2xl p-5 transition-transform duration-200 hover:-translate-y-0.5">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-medium text-slate-500">Me gusta totales</span>
-                  <span className="text-xs font-medium text-[#0284C7]">20 perfiles</span>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            {/* KPI Cards aligned with 3D Ring Gauges */}
+            <div className="pointer-events-auto grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-8">
+              <div className="glass-panel rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Total Cuentas</span>
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#0284C7]" />
                 </div>
-                <div className="font-mono-tabular mt-1.5 text-3xl font-bold tracking-tight text-[#0F172A]">
-                  <AnimatedDecimal target={3.13} decimals={2} suffix="M" instant={instantNumbers} triggerKey={activeSlide} />
+                <div className="font-mono-tabular mt-1.5 text-2xl font-bold text-[#0F172A]">
+                  <AnimatedInteger target={20} instant={instantNumbers} triggerKey={activeSlide} />
                 </div>
-                <p className="mt-1 text-xs text-slate-600">
-                  3.132.700 reacciones acumuladas en 31 días de monitoreo.
+                <p className="mt-1 text-[11px] text-slate-600">
+                  19 con likes · 1 sin likes
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="glass-panel rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
-                  <span className="text-xs font-medium text-slate-500">Engagement medio</span>
-                  <div className="font-mono-tabular mt-1.5 text-2xl font-bold text-[#F97316]">
-                    <AnimatedDecimal target={1.06} decimals={2} suffix="%" instant={instantNumbers} triggerKey={activeSlide} />
-                  </div>
-                  <p className="mt-1 text-xs text-slate-600">Tasa promedio regional</p>
+              <div className="glass-panel rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Me Gusta Totales</span>
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#0F172A]" />
                 </div>
+                <div className="font-mono-tabular mt-1.5 text-2xl font-bold text-[#0284C7]">
+                  <AnimatedDecimal target={3.13} decimals={2} suffix="M" instant={instantNumbers} triggerKey={activeSlide} />
+                </div>
+                <p className="mt-1 text-[11px] text-slate-600">
+                  3.132.700 reacciones totales
+                </p>
+              </div>
 
-                <div className="glass-panel rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
-                  <span className="text-xs font-medium text-slate-500">Frecuencia diaria</span>
-                  <div className="font-mono-tabular mt-1.5 text-2xl font-bold text-[#10B981]">
-                    <AnimatedDecimal target={6.0} decimals={1} instant={instantNumbers} triggerKey={activeSlide} />
-                  </div>
-                  <p className="mt-1 text-xs text-slate-600">Posts/día por cuenta</p>
+              <div className="glass-panel rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Engagement Rate</span>
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#F97316]" />
                 </div>
+                <div className="font-mono-tabular mt-1.5 text-2xl font-bold text-[#F97316]">
+                  <AnimatedDecimal target={1.06} decimals={2} suffix="%" instant={instantNumbers} triggerKey={activeSlide} />
+                </div>
+                <p className="mt-1 text-[11px] text-slate-600">
+                  Reels líderes: 1,36% ER
+                </p>
+              </div>
+
+              <div className="glass-panel rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Crecimiento Neto</span>
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#10B981]" />
+                </div>
+                <div className="font-mono-tabular mt-1.5 text-2xl font-bold text-[#10B981]">
+                  <AnimatedDecimal target={2.63} decimals={2} prefix="+" suffix="%" instant={instantNumbers} triggerKey={activeSlide} />
+                </div>
+                <p className="mt-1 text-[11px] text-slate-600">
+                  6,0 posts/día por cuenta
+                </p>
               </div>
             </div>
 
-            <div className="hidden md:col-span-7 lg:col-span-8 md:flex items-end justify-end">
-              <div className="glass-panel pointer-events-auto w-full max-w-sm rounded-2xl p-4 text-xs">
-                <div className="flex items-center justify-between border-b border-slate-900/10 pb-2">
-                  <span className="font-display font-semibold text-[#0F172A]">
-                    Simbología de la Escultura 3D
-                  </span>
-                  <span className="text-[11px] font-medium text-[#0284C7]">
-                    Lectura visual
-                  </span>
-                </div>
-
-                {/* Orbital Rings Key */}
-                <div className="mt-2.5 grid grid-cols-3 gap-2 text-[11px]">
-                  <div className="rounded-lg bg-white/80 px-2 py-1.5 border border-slate-900/6">
-                    <div className="flex items-center gap-1.5 font-semibold text-[#0F172A]">
-                      <span className="h-2 w-2 rounded-full bg-[#0284C7]" />
-                      Órbita Cian
+            {/* Segment Distribution Summary aligned with 3D Bars & Total Cuentas Ring */}
+            <div className="glass-panel pointer-events-auto rounded-2xl p-4 lg:col-span-4">
+              <div className="flex items-center justify-between border-b border-slate-900/10 pb-2 text-xs">
+                <span className="font-display font-semibold text-[#0F172A]">
+                  Distribución por Segmento (20 Cuentas)
+                </span>
+                <span className="font-mono-tabular font-semibold text-[#0284C7]">
+                  Top 5: 86,3%
+                </span>
+              </div>
+              <div className="mt-2.5 space-y-2">
+                {ECOSYSTEM_SEGMENT_SUMMARY.map((seg) => (
+                  <div key={seg.segment} className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-medium text-[#0F172A]">
+                        {seg.segment}{' '}
+                        <span className="text-slate-500">({seg.accounts} ctas)</span>
+                      </span>
+                      <span className="font-mono-tabular font-semibold text-[#0F172A]">
+                        {seg.likesLabel}{' '}
+                        <span style={{ color: seg.color }}>
+                          ({seg.sharePct.toFixed(1).replace('.', ',')}%)
+                        </span>
+                      </span>
                     </div>
-                    <div className="mt-0.5 text-slate-500">Volumen (3,13M)</div>
-                  </div>
-                  <div className="rounded-lg bg-white/80 px-2 py-1.5 border border-slate-900/6">
-                    <div className="flex items-center gap-1.5 font-semibold text-[#0F172A]">
-                      <span className="h-2 w-2 rounded-full bg-[#F97316]" />
-                      Órbita Coral
-                    </div>
-                    <div className="mt-0.5 text-slate-500">Engagement (1,06%)</div>
-                  </div>
-                  <div className="rounded-lg bg-white/80 px-2 py-1.5 border border-slate-900/6">
-                    <div className="flex items-center gap-1.5 font-semibold text-[#0F172A]">
-                      <span className="h-2 w-2 rounded-full bg-[#10B981]" />
-                      Órbita Verde
-                    </div>
-                    <div className="mt-0.5 text-slate-500">Cadencia (6,0/día)</div>
-                  </div>
-                </div>
-
-                {/* Perimeter Pillars Key */}
-                <div className="mt-3 border-t border-slate-900/8 pt-2.5">
-                  <div className="text-[11px] font-semibold text-slate-600">
-                    10 Pilares Perimetrales · Top 10 Cuentas (% de Me gusta)
-                  </div>
-                  <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-600">
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#0284C7]" />
-                      <span>Medios Informativos</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#10B981]" />
-                      <span>Comunidad Local</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#F97316]" />
-                      <span>Alto Engagement</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#0F172A]" />
-                      <span>Institucional / Figuras</span>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${seg.sharePct}%`, backgroundColor: seg.color }}
+                      />
                     </div>
                   </div>
-                </div>
-
-                {/* Floating Spheres Key */}
-                <div className="mt-2.5 border-t border-slate-900/8 pt-2 text-[11px] text-slate-500">
-                  <span className="font-semibold text-[#0F172A]">6 Esferas orbitales:</span>{' '}
-                  Hashtags tractores del período (<span className="font-mono-tabular text-[#F97316]">#afp</span>, <span className="font-mono-tabular text-[#0284C7]">#tocopilla</span>, <span className="font-mono-tabular text-[#10B981]">#lapaloma</span>).
-                </div>
+                ))}
               </div>
             </div>
           </div>

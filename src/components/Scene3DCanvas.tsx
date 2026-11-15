@@ -23,6 +23,7 @@ interface Scene3DCanvasProps {
   highlightedRank: number | null;
   resetCameraNonce: number;
   freeOrbitMode: boolean;
+  autoPresent?: boolean;
   onHoverRank?: (rank: number | null) => void;
 }
 
@@ -44,7 +45,7 @@ const _mouseNdc = new THREE.Vector2();
 const _tempColor = new THREE.Color();
 
 export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
-  ({ activeSlide, highlightedRank, resetCameraNonce, freeOrbitMode, onHoverRank }, ref) => {
+  ({ activeSlide, highlightedRank, resetCameraNonce, freeOrbitMode, autoPresent = false, onHoverRank }, ref) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [webglError, setWebglError] = useState(false);
@@ -53,6 +54,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
   const activeSlideRef = useRef(activeSlide);
   const highlightedRankRef = useRef(highlightedRank);
   const freeOrbitRef = useRef(freeOrbitMode);
+  const autoPresentRef = useRef(autoPresent);
   const onHoverRankRef = useRef(onHoverRank);
   const cameraTransitionActiveRef = useRef(true);
   const captureApiRef = useRef<Scene3DHandle | null>(null);
@@ -73,6 +75,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
   activeSlideRef.current = activeSlide;
   highlightedRankRef.current = highlightedRank;
   freeOrbitRef.current = freeOrbitMode;
+  autoPresentRef.current = autoPresent;
   onHoverRankRef.current = onHoverRank;
 
   // Trigger smooth camera preset glide when slide changes or reset requested
@@ -434,9 +437,10 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
         const nextScale = THREE.MathUtils.damp(activeScene.group.scale.x, 1, 7, delta);
         activeScene.group.scale.setScalar(nextScale);
 
-        // Gentle mouse rotation parallax when not orbiting manually
+        // Gentle mouse rotation parallax + optional autoPresent sway when not orbiting manually
         if (!freeOrbitRef.current) {
-          const targetRotY = pointerOffsetX * 0.16;
+          const autoSway = autoPresentRef.current ? Math.sin(elapsed * 0.35) * 0.14 : 0;
+          const targetRotY = pointerOffsetX * 0.16 + autoSway;
           const targetRotX = -pointerOffsetY * 0.08;
           activeScene.group.rotation.y = THREE.MathUtils.damp(
             activeScene.group.rotation.y,

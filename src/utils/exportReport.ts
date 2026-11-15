@@ -72,7 +72,7 @@ function drawSlidePageInPdf(
   slideLabel: string,
   issuedDate: string,
   theme: ExportTheme = 'light',
-  reportSubtitle = 'Coquimbo Digital 2026 (14 oct – 14 nov)',
+  reportSubtitle = 'La Serena Digital 2026 (14 oct – 14 nov)',
   unitWord = 'Lámina'
 ) {
   const isDark = theme === 'dark';
@@ -312,7 +312,7 @@ function drawAuditedTablesAppendixPage(doc: jsPDF, issuedDate: string) {
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
-    `Anexo Estadístico Completo · Coquimbo Digital 2026 · ${issuedDate}`,
+    `Anexo Estadístico Completo · La Serena Digital 2026 · ${issuedDate}`,
     60,
     PDF_PAGE_H - 3.6
   );
@@ -405,7 +405,7 @@ export async function exportFullPresentationPdf({
   slides = SLIDES,
   theme = 'light',
   filename = 'Reporte_Coquimbo_Digital_2026.pdf',
-  reportSubtitle = 'Coquimbo Digital 2026 (14 oct – 14 nov)',
+  reportSubtitle = 'La Serena Digital 2026 (14 oct – 14 nov)',
   unitWord = 'Lámina',
   includeAppendix = true,
   prepareSlide3D,

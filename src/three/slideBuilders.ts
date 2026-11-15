@@ -201,207 +201,237 @@ function createCompositeCylinderBar(options: {
 }
 
 /**
- * SLIDE 0: Portada 3D — Escultura de datos orbital + Top 10 Actores por Segmento + 6 Temas Motores
+ * SLIDE 0: Dashboard de Resumen Ejecutivo — 3 Anillos KPI (Total Cuentas, Engagement, Crecimiento) + 6 Barras Líderes
  */
 export function buildSlide0Hero(): BuiltSlideScene {
   const group = new THREE.Group();
   const hoverables: THREE.Object3D[] = [];
-  const gyroRings: THREE.Mesh[] = [];
+  const rings: THREE.Mesh[] = [];
   const floatingNodes: { obj: THREE.Object3D; baseY: number; phase: number; speed: number }[] = [];
 
-  // Offset slightly right so left editorial title & KPIs breathe
-  const sculpture = new THREE.Group();
-  sculpture.position.set(2.05, 0, 0);
-  group.add(sculpture);
+  const dashboard = new THREE.Group();
+  dashboard.position.set(0.45, 0, 0);
+  group.add(dashboard);
 
-  // Ground architectural base disc
-  const plinthOuter = new THREE.Mesh(
-    new THREE.CylinderGeometry(3.55, 3.75, 0.14, 64),
-    new THREE.MeshStandardMaterial({ color: '#E2E8F0', roughness: 0.55, metalness: 0.25 })
+  // Clean two-tier architectural dashboard platform
+  const baseDeck = new THREE.Mesh(
+    new THREE.BoxGeometry(11.6, 0.16, 5.2),
+    new THREE.MeshStandardMaterial({ color: '#E2E8F0', roughness: 0.62, metalness: 0.18 })
   );
-  plinthOuter.position.y = 0.07;
-  plinthOuter.receiveShadow = true;
-  sculpture.add(plinthOuter);
+  baseDeck.position.set(0, 0.08, 0);
+  baseDeck.receiveShadow = true;
+  dashboard.add(baseDeck);
 
-  const plinthInner = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.7, 2.8, 0.18, 64),
-    new THREE.MeshStandardMaterial({ color: '#0F172A', roughness: 0.35, metalness: 0.45 })
+  const rearRail = new THREE.Mesh(
+    new THREE.BoxGeometry(10.8, 0.14, 1.9),
+    new THREE.MeshStandardMaterial({ color: '#0F172A', roughness: 0.42, metalness: 0.35 })
   );
-  plinthInner.position.y = 0.15;
-  plinthInner.receiveShadow = true;
-  sculpture.add(plinthInner);
+  rearRail.position.set(0, 0.23, -1.35);
+  rearRail.receiveShadow = true;
+  dashboard.add(rearRail);
 
-  // Central glass-like optical sphere core -> Ecosistema Regional
-  const coreGeo = new THREE.IcosahedronGeometry(0.84, 3);
-  const coreMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color('#0284C7'),
-    roughness: 0.12,
-    metalness: 0.2,
-    clearcoat: 1.0,
-    emissive: new THREE.Color('#0284C7'),
-    emissiveIntensity: 0.18,
-  });
-  const core = new THREE.Mesh(coreGeo, coreMat);
-  core.position.y = 2.45;
-  core.castShadow = true;
-  sculpture.add(core);
-  registerHoverable(
-    core,
-    hoverables,
+  // --- BACK ROW (z = -1.35): 3 LEGIBLE 3D KPI RING GAUGES ---
+  const kpiRings = [
     {
-      title: 'Núcleo · Ecosistema Regional Coquimbo',
-      metric: '3.132.700 Me gusta',
-      subtitle: '20 cuentas monitoreadas · 14 oct – 14 nov 2026',
+      x: -3.4,
+      title: 'Total Cuentas Monitoreadas',
+      badgeTitle: 'Total Cuentas',
+      badgeValue: '20 perfiles · 3,13M',
+      metric: '20 perfiles activos',
+      subtitle: '8 Medios (75,6%) · 8 Comunidad (21,5%) · 4 Instituc. (2,9%)',
       color: '#0284C7',
-    },
-    core
-  );
-
-  // 3 Concentric Orbital Rings with clear metric meaning
-  const ringConfigs = [
-    {
-      radius: 1.62,
-      tube: 0.065,
-      color: '#0284C7',
-      tiltX: 0.9,
-      tiltZ: 0.3,
-      label: 'Órbita de Volumen · Me Gusta Totales',
-      metric: '3,13M',
-      sub: 'Reacciones acumuladas en 31 días de monitoreo',
+      segments: [
+        { arc: Math.PI * 2 * 0.756, color: '#0284C7' },
+        { arc: Math.PI * 2 * 0.215, color: '#10B981' },
+        { arc: Math.PI * 2 * 0.029, color: '#64748B' },
+      ],
+      variancePct: undefined,
+      averageLabel: undefined,
     },
     {
-      radius: 2.1,
-      tube: 0.055,
+      x: 0.0,
+      title: 'Engagement Rate Promedio',
+      badgeTitle: 'Engagement Rate',
+      badgeValue: '1,06% medio',
+      metric: '1,06% tasa media',
+      subtitle: 'Reels alcanzan 1,36% (+28,3% sobre la media del ecosistema)',
       color: '#F97316',
-      tiltX: -0.7,
-      tiltZ: 0.8,
-      label: 'Órbita de Intensidad · Engagement Medio',
-      metric: '1,06%',
-      sub: 'Tasa promedio regional sobre base de seguidores',
+      segments: [
+        { arc: Math.PI * 2 * 0.68, color: '#F97316' },
+        { arc: Math.PI * 2 * 0.32, color: '#CBD5E1' },
+      ],
+      variancePct: 28.3,
+      averageLabel: 'Reels 1,36% vs 1,06%',
     },
     {
-      radius: 2.58,
-      tube: 0.048,
+      x: 3.4,
+      title: 'Crecimiento Neto Promedio',
+      badgeTitle: 'Crecimiento Neto',
+      badgeValue: '+2,63% · 6,0/día',
+      metric: '+2,63% crecimiento',
+      subtitle: 'Expansión orgánica de seguidores · 6,0 publicaciones/día por cuenta',
       color: '#10B981',
-      tiltX: 0.4,
-      tiltZ: -0.9,
-      label: 'Órbita de Cadencia · Frecuencia Diaria',
-      metric: '6,0 posts/día',
-      sub: 'Ritmo promedio de publicación por cuenta activa',
+      segments: [
+        { arc: Math.PI * 2 * 0.78, color: '#10B981' },
+        { arc: Math.PI * 2 * 0.22, color: '#CBD5E1' },
+      ],
+      variancePct: undefined,
+      averageLabel: undefined,
     },
   ];
 
-  ringConfigs.forEach((cfg) => {
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(cfg.radius, cfg.tube, 24, 96),
-      makeBarMaterial(cfg.color, 0.2, 0.55)
+  kpiRings.forEach((cfg, idx) => {
+    const gaugeGroup = new THREE.Group();
+    gaugeGroup.position.set(cfg.x, 0.3, -1.35);
+    dashboard.add(gaugeGroup);
+
+    // Metallic support stem
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.14, 0.65, 24),
+      makeCollarMaterial()
     );
-    ring.position.y = 2.45;
-    ring.rotation.set(cfg.tiltX, 0, cfg.tiltZ);
-    ring.castShadow = true;
-    sculpture.add(ring);
-    gyroRings.push(ring);
+    stem.position.y = 0.325;
+    stem.castShadow = true;
+    gaugeGroup.add(stem);
+
+    // Gauge Ring center height
+    const centerY = 1.68;
+    const ringPivot = new THREE.Group();
+    ringPivot.position.y = centerY;
+    gaugeGroup.add(ringPivot);
+
+    let startAngle = Math.PI / 2;
+    cfg.segments.forEach((seg) => {
+      const arc = Math.max(0.12, seg.arc - 0.08);
+      const torus = new THREE.Mesh(
+        new THREE.TorusGeometry(0.86, 0.16, 20, 56, arc),
+        makeBarMaterial(seg.color, 0.22, 0.28)
+      );
+      torus.rotation.z = startAngle;
+      torus.castShadow = true;
+      ringPivot.add(torus);
+      registerHoverable(
+        torus,
+        hoverables,
+        {
+          title: cfg.title,
+          metric: cfg.metric,
+          subtitle: cfg.subtitle,
+          color: cfg.color,
+          variancePct: cfg.variancePct,
+          averageLabel: cfg.averageLabel,
+        },
+        torus
+      );
+      startAngle += seg.arc;
+    });
+
+    // Subtle inner accent core inside each KPI ring
+    const innerHub = new THREE.Mesh(
+      new THREE.SphereGeometry(0.32, 24, 24),
+      makeBarMaterial(cfg.color, 0.18, 0.35)
+    );
+    innerHub.castShadow = true;
+    ringPivot.add(innerHub);
+    floatingNodes.push({ obj: ringPivot, baseY: centerY, phase: idx * 0.9, speed: 1.5 });
+
     registerHoverable(
-      ring,
+      innerHub,
       hoverables,
       {
-        title: cfg.label,
+        title: cfg.title,
         metric: cfg.metric,
-        subtitle: cfg.sub,
+        subtitle: cfg.subtitle,
+        color: cfg.color,
+        variancePct: cfg.variancePct,
+        averageLabel: cfg.averageLabel,
+      },
+      innerHub
+    );
+
+    // Permanent clear KPI label above each 3D ring
+    const badge = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: createPieSliceLabelTexture(cfg.badgeTitle, cfg.badgeValue, cfg.color),
+        transparent: true,
+        depthWrite: false,
+      })
+    );
+    badge.scale.set(2.25, 0.62, 1);
+    badge.position.set(0, 3.02, 0);
+    gaugeGroup.add(badge);
+    registerHoverable(
+      badge,
+      hoverables,
+      {
+        title: cfg.title,
+        metric: cfg.metric,
+        subtitle: cfg.subtitle,
         color: cfg.color,
       },
-      ring
+      innerHub
     );
   });
 
-  // Top 10 real accounts around the perimeter, color-coded by ecosystem segment
-  const top10Hero = TOP_20_LIKES.slice(0, 10);
-  const maxHeroLikes = top10Hero[0].likes;
-  const avgHeroLikes = top10Hero.reduce((sum, a) => sum + a.likes, 0) / top10Hero.length;
+  // --- FRONT ROW (z = 1.25): 6 LEGIBLE PERFORMANCE BARS (TOP 5 + OTROS 15 PERFILES) ---
+  const summaryBars = [
+    ...TOP_20_LIKES.slice(0, 5).map((acc, i) => ({
+      name: `${acc.rank}. ${acc.name}`,
+      likes: acc.likes,
+      sharePct: acc.shareOfLikes,
+      color: i === 0 ? '#0284C7' : i === 1 ? '#0F172A' : i === 2 ? '#10B981' : i === 3 ? '#F97316' : '#38BDF8',
+      category: acc.category,
+      rank: acc.rank,
+    })),
+    {
+      name: 'Otros 15 perfiles',
+      likes: 428700,
+      sharePct: 13.68,
+      color: '#64748B',
+      category: 'Resto del ecosistema (#6–#20)',
+      rank: 6,
+    },
+  ];
 
-  const getSegmentAppearance = (acc: (typeof TOP_20_LIKES)[number]) => {
-    if (acc.name === 'Papaya TV' || acc.name === 'RSB Chile') {
-      return { color: '#F97316', role: 'Alto Engagement / Viralidad' };
-    }
-    if (acc.category === 'Medio Informativo') {
-      return { color: '#0284C7', role: 'Medio Informativo' };
-    }
-    if (acc.category === 'Comunidad / Viral') {
-      return { color: '#10B981', role: 'Comunidad Local' };
-    }
-    return { color: '#0F172A', role: 'Institucional / Figura' };
-  };
+  const maxBarLikes = 1200000;
+  const avgSummaryLikes =
+    summaryBars.reduce((sum, b) => sum + b.likes, 0) / summaryBars.length;
+  const spacing = 1.72;
+  const startX = -((summaryBars.length - 1) * spacing) / 2;
 
-  top10Hero.forEach((acc, i) => {
-    // Arrange tallest leaders along the rear arc and smaller leaders in front
-    const angle = -Math.PI * 0.78 + (i / top10Hero.length) * Math.PI * 2;
-    const r = 3.12;
-    const x = Math.cos(angle) * r;
-    const z = Math.sin(angle) * r;
-    const { color, role } = getSegmentAppearance(acc);
-    const scaledH = 0.55 + Math.sqrt(acc.likes / maxHeroLikes) * 2.15;
+  summaryBars.forEach((bar, idx) => {
+    const h = 0.45 + (bar.likes / maxBarLikes) * 2.35;
+    const x = startX + idx * spacing;
 
     const { barGroup } = createCompositeCylinderBar({
-      radius: 0.19,
-      height: scaledH,
-      color,
-      position: [x, 0.14, z],
+      radius: 0.36,
+      height: h,
+      color: bar.color,
+      position: [x, 0.16, 1.25],
       payload: {
-        title: `#${acc.rank} · ${acc.name}`,
-        metric: `${formatSpanishInt(acc.likes)} Me gusta`,
-        subtitle: `${role} · ${acc.shareOfLikes.toFixed(1).replace('.', ',')}% del ecosistema`,
-        color,
-        rank: acc.rank,
-        variancePct: calcVariancePct(acc.likes, avgHeroLikes),
-        averageLabel: '298,4k prom. Top 10',
+        title: bar.name,
+        metric: `${formatSpanishInt(bar.likes)} Me gusta`,
+        subtitle: `${bar.category} · ${bar.sharePct.toFixed(1).replace('.', ',')}% del total regional`,
+        color: bar.color,
+        rank: bar.rank,
+        variancePct: calcVariancePct(bar.likes, avgSummaryLikes),
+        averageLabel: '522,1k prom. bloque',
       },
       hoverables,
       permanentLabel: {
-        name: `${acc.rank}. ${acc.name}`,
-        pctLabel: `${acc.shareOfLikes.toFixed(1).replace('.', ',')}%`,
-        scale: 0.66,
+        name: bar.name,
+        pctLabel: `${bar.sharePct.toFixed(1).replace('.', ',')}%`,
+        scale: 0.72,
       },
     });
-    sculpture.add(barGroup);
-  });
-
-  // 6 Floating orbital nodes tied directly to the 6 top Conversation Hashtags
-  const avgTagPct =
-    HASHTAGS_DATA.reduce((sum, h) => sum + h.interactionPct, 0) / HASHTAGS_DATA.length;
-
-  HASHTAGS_DATA.forEach((tag, i) => {
-    const ang = (i / HASHTAGS_DATA.length) * Math.PI * 2 + 0.35;
-    const nodeRadius = 0.13 + (tag.interactionPct / 45) * 0.08;
-    const node = new THREE.Mesh(
-      new THREE.SphereGeometry(nodeRadius, 24, 24),
-      makeBarMaterial(tag.color, 0.18, 0.4)
-    );
-    const yBase = 1.65 + (i % 3) * 0.72;
-    node.position.set(Math.cos(ang) * 2.38, yBase, Math.sin(ang) * 2.38);
-    node.castShadow = true;
-    sculpture.add(node);
-    floatingNodes.push({ obj: node, baseY: yBase, phase: i * 1.1, speed: 1.4 });
-
-    registerHoverable(
-      node,
-      hoverables,
-      {
-        title: `Tema Motor · ${tag.tag}`,
-        metric: `${tag.interactionPct}% interacción`,
-        subtitle: tag.topic,
-        color: tag.color,
-        variancePct: calcVariancePct(tag.interactionPct, avgTagPct),
-        averageLabel: '22,7% prom.',
-      },
-      node
-    );
+    dashboard.add(barGroup);
   });
 
   return {
     group,
     hoverables,
-    animatedObjects: { gyroRings, floatingNodes },
-    cameraPreset: { position: [0.55, 4.45, 11.4], target: [1.05, 2.2, 0] },
+    animatedObjects: { rings, floatingNodes },
+    cameraPreset: { position: [0.45, 5.2, 12.6], target: [0.45, 2.15, 0] },
   };
 }
 

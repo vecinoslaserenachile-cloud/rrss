@@ -594,7 +594,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
         <div
           ref={containerRef}
           className="absolute inset-0 h-full w-full"
-          aria-label="Escena 3D de telemetría Coquimbo Digital Benchmark 3D"
+          aria-label="Escena 3D de telemetría La Serena Benchmark 3D"
         />
 
         {webglError && (

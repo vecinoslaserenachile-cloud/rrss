@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Cpu,
   Eye,
   EyeOff,
   FileDown,
+  Loader2,
   Orbit,
   Play,
   Pause,
   RotateCcw,
+  Sparkles,
+  Square,
+  Volume2,
+  X,
 } from 'lucide-react';
 import { BenchmarkOverlays } from './components/BenchmarkOverlays';
 import { BenchmarkSceneCanvas } from './components/BenchmarkSceneCanvas';
@@ -18,6 +24,8 @@ import { Scene3DCanvas, Scene3DHandle } from './components/Scene3DCanvas';
 import { SlideOverlays } from './components/SlideOverlays';
 import { BENCHMARK_CHAPTERS } from './data/benchmarkData';
 import { SLIDES } from './data/coquimboData';
+import { BENCHMARK_NARRATIONS, ECOSYSTEM_NARRATIONS } from './data/narrationScripts';
+import { useSlideNarration } from './hooks/useSlideNarration';
 import { ConurbanoDuelMode } from './three/benchmarkBuilders';
 import {
   exportCurrentSlidePdf,
@@ -96,21 +104,92 @@ export default function App() {
   } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
+  const [presentationCompleted, setPresentationCompleted] = useState<boolean>(false);
+
   const captureStageRef = useRef<HTMLDivElement | null>(null);
   const ecoSceneRef = useRef<Scene3DHandle | null>(null);
   const benchSceneRef = useRef<Scene3DHandle | null>(null);
+  const autoAdvanceTimerRef = useRef<number | null>(null);
+  const autoPresentRef = useRef<boolean>(autoPresent);
+  autoPresentRef.current = autoPresent;
 
   const isBenchmark = activeReport === 'benchmark';
 
-  // Auto-advance chapters gently in Benchmark Auto Presentation mode
-  useEffect(() => {
-    if (!isBenchmark || !autoPresent || isExporting) return;
-    const timer = window.setInterval(() => {
-      setActiveBenchChapter((prev) => (prev + 1) % BENCHMARK_CHAPTERS.length);
-      setHighlightedRank(null);
-    }, 12000);
-    return () => window.clearInterval(timer);
-  }, [isBenchmark, autoPresent, isExporting]);
+  const currentNarrationScript = isBenchmark
+    ? (BENCHMARK_NARRATIONS[activeBenchChapter] ?? '')
+    : (ECOSYSTEM_NARRATIONS[activeSlide] ?? '');
+
+  // Pre-fetch next slide/chapter seamlessly across report boundary (Slide 8 -> Benchmark Cap 0)
+  const nextPrefetchTarget = (() => {
+    if (!isBenchmark) {
+      if (activeSlide + 1 < SLIDES.length) {
+        return {
+          key: `ecosistema-${activeSlide + 1}`,
+          script: ECOSYSTEM_NARRATIONS[activeSlide + 1] ?? '',
+        };
+      }
+      return {
+        key: 'benchmark-0',
+        script: BENCHMARK_NARRATIONS[0] ?? '',
+      };
+    }
+    if (activeBenchChapter + 1 < BENCHMARK_CHAPTERS.length) {
+      return {
+        key: `benchmark-${activeBenchChapter + 1}`,
+        script: BENCHMARK_NARRATIONS[activeBenchChapter + 1] ?? '',
+      };
+    }
+    return { key: undefined, script: undefined };
+  })();
+
+  const clearAutoAdvanceTimer = useCallback(() => {
+    if (autoAdvanceTimerRef.current) {
+      window.clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
+  }, []);
+
+  const handleNarrationFinished = useCallback(() => {
+    if (!autoPresentRef.current || isExporting) return;
+    clearAutoAdvanceTimer();
+
+    autoAdvanceTimerRef.current = window.setTimeout(() => {
+      if (!autoPresentRef.current) return;
+
+      if (!isBenchmark) {
+        if (activeSlide + 1 < SLIDES.length) {
+          setHighlightedRank(null);
+          setActiveSlide((prev) => prev + 1);
+        } else {
+          // Seamless cross-report transition: Slide 9 -> Benchmark 3D Chapter 1
+          setHighlightedRank(null);
+          setFreeOrbitMode(false);
+          setActiveReport('benchmark');
+          setActiveBenchChapter(0);
+          setResetCameraNonce((n) => n + 1);
+        }
+      } else {
+        if (activeBenchChapter + 1 < BENCHMARK_CHAPTERS.length) {
+          setHighlightedRank(null);
+          setActiveBenchChapter((prev) => prev + 1);
+        } else {
+          // Completed full two-report keynote presentation
+          setAutoPresent(false);
+          setPresentationCompleted(true);
+        }
+      }
+    }, 1400);
+  }, [activeBenchChapter, activeSlide, clearAutoAdvanceTimer, isBenchmark, isExporting]);
+
+  const narration = useSlideNarration({
+    script: currentNarrationScript,
+    slideKey: `${activeReport}-${isBenchmark ? activeBenchChapter : activeSlide}`,
+    nextSlideKey: nextPrefetchTarget.key,
+    nextScript: nextPrefetchTarget.script,
+    onNarrationEnd: handleNarrationFinished,
+  });
+
+  useEffect(() => () => clearAutoAdvanceTimer(), [clearAutoAdvanceTimer]);
 
   // Synchronize URL query parameters cleanly for reporte.vecinoslaserena.cl
   useEffect(() => {
@@ -137,16 +216,58 @@ export default function App() {
     }
   }, [activeReport, activeSlide, activeBenchChapter, isBenchmark, isExporting]);
 
-  const switchReport = useCallback((target: ReportType) => {
-    setActiveReport(target);
+  const switchReport = useCallback(
+    (target: ReportType) => {
+      clearAutoAdvanceTimer();
+      setActiveReport(target);
+      setHighlightedRank(null);
+      setFreeOrbitMode(false);
+      setAutoPresent(false);
+      setPresentationCompleted(false);
+      setResetCameraNonce((n) => n + 1);
+    },
+    [clearAutoAdvanceTimer]
+  );
+
+  const toggleAutoPresentation = useCallback(() => {
+    clearAutoAdvanceTimer();
+    setPresentationCompleted(false);
+    if (autoPresent) {
+      setAutoPresent(false);
+      narration.setAutoNarrate(false);
+      narration.stop();
+    } else {
+      const alreadyAutoNarrating = narration.autoNarrate;
+      setFreeOrbitMode(false);
+      setAutoPresent(true);
+      narration.setAutoNarrate(true);
+      if (alreadyAutoNarrating && !narration.isSpeaking && !narration.isLoadingAudio) {
+        void narration.speakCurrent();
+      }
+    }
+  }, [autoPresent, clearAutoAdvanceTimer, narration]);
+
+  const startKeynoteFromBeginning = useCallback(() => {
+    clearAutoAdvanceTimer();
+    setPresentationCompleted(false);
     setHighlightedRank(null);
     setFreeOrbitMode(false);
-    setAutoPresent(false);
+    const alreadyAtStart = activeReport === 'ecosistema' && activeSlide === 0 && narration.autoNarrate;
+    setActiveReport('ecosistema');
+    setActiveSlide(0);
+    setActiveBenchChapter(0);
     setResetCameraNonce((n) => n + 1);
-  }, []);
+    setAutoPresent(true);
+    narration.setAutoNarrate(true);
+    if (alreadyAtStart && !narration.isSpeaking && !narration.isLoadingAudio) {
+      void narration.speakCurrent();
+    }
+  }, [activeReport, activeSlide, clearAutoAdvanceTimer, narration]);
 
   const goToIndex = useCallback(
     (index: number) => {
+      clearAutoAdvanceTimer();
+      setPresentationCompleted(false);
       setHighlightedRank(null);
       if (isBenchmark) {
         setActiveBenchChapter(Math.max(0, Math.min(BENCHMARK_CHAPTERS.length - 1, index)));
@@ -154,19 +275,23 @@ export default function App() {
         setActiveSlide(Math.max(0, Math.min(SLIDES.length - 1, index)));
       }
     },
-    [isBenchmark]
+    [clearAutoAdvanceTimer, isBenchmark]
   );
 
   const nextItem = useCallback(() => {
+    clearAutoAdvanceTimer();
+    setPresentationCompleted(false);
     setHighlightedRank(null);
     if (isBenchmark) {
       setActiveBenchChapter((prev) => (prev + 1) % BENCHMARK_CHAPTERS.length);
     } else {
       setActiveSlide((prev) => (prev + 1) % SLIDES.length);
     }
-  }, [isBenchmark]);
+  }, [clearAutoAdvanceTimer, isBenchmark]);
 
   const prevItem = useCallback(() => {
+    clearAutoAdvanceTimer();
+    setPresentationCompleted(false);
     setHighlightedRank(null);
     if (isBenchmark) {
       setActiveBenchChapter(
@@ -175,13 +300,14 @@ export default function App() {
     } else {
       setActiveSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
     }
-  }, [isBenchmark]);
+  }, [clearAutoAdvanceTimer, isBenchmark]);
 
   const handleResetCamera = useCallback(() => {
+    clearAutoAdvanceTimer();
     setFreeOrbitMode(false);
     setAutoPresent(false);
     setResetCameraNonce((n) => n + 1);
-  }, []);
+  }, [clearAutoAdvanceTimer]);
 
   const handleExport = useCallback(
     async (mode: ExportMode) => {
@@ -207,7 +333,7 @@ export default function App() {
             () => sceneHandle.renderCurrentFrame(),
             {
               theme: isBenchmark ? 'dark' : 'light',
-              prefix: isBenchmark ? 'Coquimbo_Benchmark_Cap' : 'Coquimbo_Digital_Lamina',
+              prefix: isBenchmark ? 'LaSerena_Benchmark_Cap' : 'La_Serena_Digital_Lamina',
             }
           );
         } else if (mode === 'current-pdf') {
@@ -218,10 +344,10 @@ export default function App() {
             {
               theme: isBenchmark ? 'dark' : 'light',
               totalCount: isBenchmark ? BENCHMARK_CHAPTERS.length : SLIDES.length,
-              prefix: isBenchmark ? 'Coquimbo_Benchmark_Cap' : 'Coquimbo_Digital_Lamina',
+              prefix: isBenchmark ? 'LaSerena_Benchmark_Cap' : 'La_Serena_Digital_Lamina',
               reportSubtitle: isBenchmark
-                ? 'Coquimbo Digital Benchmark 3D (28 días · 26 cuentas)'
-                : 'Coquimbo Digital 2026 (14 oct – 14 nov)',
+                ? 'La Serena Digital · Benchmark 3D (28 días · 26 cuentas)'
+                : 'La Serena Digital 2026 (14 oct – 14 nov)',
               unitWord: isBenchmark ? 'Capítulo' : 'Lámina',
             }
           );
@@ -232,11 +358,11 @@ export default function App() {
             slides: isBenchmark ? BENCHMARK_CHAPTERS : SLIDES,
             theme: isBenchmark ? 'dark' : 'light',
             filename: isBenchmark
-              ? 'Reporte_Coquimbo_Benchmark_3D.pdf'
-              : 'Reporte_Coquimbo_Digital_2026.pdf',
+              ? 'Reporte_LaSerena_Benchmark_3D.pdf'
+              : 'Reporte_La_Serena_Digital_2026.pdf',
             reportSubtitle: isBenchmark
-              ? 'Coquimbo Digital Benchmark 3D (28 días · 26 cuentas)'
-              : 'Coquimbo Digital 2026 (14 oct – 14 nov)',
+              ? 'La Serena Digital · Benchmark 3D (28 días · 26 cuentas)'
+              : 'La Serena Digital 2026 (14 oct – 14 nov)',
             unitWord: isBenchmark ? 'Capítulo' : 'Lámina',
             includeAppendix: !isBenchmark,
             prepareSlide3D: (idx) => sceneHandle.prepareSlideForCapture(idx),
@@ -301,12 +427,15 @@ export default function App() {
       } else if (e.key === 'e' || e.key === 'E') {
         e.preventDefault();
         setExportOpen((prev) => !prev);
+      } else if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        narration.togglePlay();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToIndex, handleResetCamera, isBenchmark, isExporting, nextItem, prevItem]);
+  }, [goToIndex, handleResetCamera, isBenchmark, isExporting, narration, nextItem, prevItem]);
 
   const itemsList = isBenchmark ? BENCHMARK_CHAPTERS : SLIDES;
   const currentIdx = isBenchmark ? activeBenchChapter : activeSlide;
@@ -348,6 +477,7 @@ export default function App() {
               highlightedRank={highlightedRank}
               resetCameraNonce={resetCameraNonce}
               freeOrbitMode={freeOrbitMode}
+              autoPresent={autoPresent}
               onHoverRank={setHighlightedRank}
             />
             <SlideOverlays
@@ -378,13 +508,13 @@ export default function App() {
               : 'text-[#0F172A] hover:text-[#0284C7]'
           }`}
         >
-          {isBenchmark ? 'Coquimbo Benchmark 3D' : 'Coquimbo Digital 2026'}
+          {isBenchmark ? 'La Serena Benchmark 3D' : 'La Serena Digital 2026'}
         </button>
 
         {/* Zone 2: Navigation Links */}
         <nav
           aria-label="Navegación de secciones"
-          className="hidden lg:flex items-center gap-4 text-xs font-medium"
+          className="hidden xl:flex items-center gap-3 text-xs font-medium"
         >
           {itemsList.map((item) => {
             const isActive = item.id === currentIdx;
@@ -424,30 +554,34 @@ export default function App() {
             onClick={() => switchReport(isBenchmark ? 'ecosistema' : 'benchmark')}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
               isBenchmark
-                ? 'border border-white/15 bg-white/10 text-white hover:bg-white/20'
-                : 'border border-[#00F0FF]/40 bg-[#060B19] text-[#00F0FF] shadow-sm hover:bg-[#0F172A]'
+                ? 'border border-white/20 bg-white/10 text-white hover:bg-white/20'
+                : 'border border-[#00F0FF]/60 bg-[#060B19] text-[#00F0FF] shadow-md hover:bg-[#0F172A]'
             }`}
           >
             <Cpu className="h-3.5 w-3.5" />
             <span>
-              {isBenchmark ? 'Ecosistema Regional (9L)' : 'Benchmark 3D (28d)'}
+              {isBenchmark ? 'Ecosistema Regional (9L)' : 'Nuevo: Benchmark 3D (28d)'}
             </span>
           </button>
 
-          {isBenchmark && (
-            <button
-              type="button"
-              onClick={() => setAutoPresent((prev) => !prev)}
-              className={`hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
-                autoPresent
-                  ? 'bg-[#FF2E93] text-white'
-                  : 'border border-white/15 bg-slate-800/80 text-slate-200 hover:bg-slate-700'
-              }`}
-            >
-              {autoPresent ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-              {autoPresent ? 'Auto Activo' : 'Presentación Auto'}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={toggleAutoPresentation}
+            title="Presentación automática con voz humana y transición continua entre ambos reportes"
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+              autoPresent
+                ? 'bg-[#FF2E93] text-white shadow-md'
+                : isBenchmark
+                  ? 'border border-white/15 bg-slate-800/80 text-slate-200 hover:bg-slate-700'
+                  : 'border border-[#0284C7]/35 bg-[#0284C7]/10 text-[#0284C7] hover:bg-[#0284C7] hover:text-white'
+            }`}
+          >
+            {autoPresent ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">
+              {autoPresent ? 'Detener Auto' : 'Presentación Auto'}
+            </span>
+            <span className="sm:hidden">{autoPresent ? 'Pausar' : 'Auto'}</span>
+          </button>
 
           <button
             type="button"
@@ -573,9 +707,42 @@ export default function App() {
             className={`mx-1 h-4 w-px ${isBenchmark ? 'bg-white/15' : 'bg-slate-900/10'}`}
           />
 
+          {narration.isSupported && (
+            <button
+              type="button"
+              onClick={narration.togglePlay}
+              title="Audio narración con voz neural humana (N)"
+              className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                narration.isSpeaking || narration.isLoadingAudio
+                  ? isBenchmark
+                    ? 'bg-[#FF2E93] text-white'
+                    : 'bg-[#0284C7] text-white'
+                  : isBenchmark
+                    ? 'bg-white/10 text-slate-200 hover:bg-white/20'
+                    : 'bg-slate-900/6 text-[#0F172A] hover:bg-slate-900/12'
+              }`}
+            >
+              {narration.isLoadingAudio ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : narration.isSpeaking ? (
+                <Square className="h-3 w-3 fill-current" />
+              ) : (
+                <Volume2 className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {narration.isLoadingAudio
+                  ? 'Preparando...'
+                  : narration.isSpeaking
+                    ? 'Pausar Audio'
+                    : 'Narrar'}
+              </span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => {
+              narration.stop();
               setExportError(null);
               setExportOpen(true);
             }}
@@ -589,8 +756,160 @@ export default function App() {
             <FileDown className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Exportar</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => switchReport(isBenchmark ? 'ecosistema' : 'benchmark')}
+            title={
+              isBenchmark
+                ? 'Volver al Reporte Ecosistema Instagram (9 Láminas)'
+                : 'Abrir Dashboard Benchmark 3D (28 Días)'
+            }
+            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+              isBenchmark
+                ? 'bg-white/12 text-white hover:bg-white/20'
+                : 'bg-[#060B19] text-[#00F0FF] hover:bg-[#0F172A]'
+            }`}
+          >
+            <Cpu className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">
+              {isBenchmark ? 'Ecosistema' : 'Benchmark 3D'}
+            </span>
+          </button>
         </div>
       </div>
+
+      {/* Live Professional Audio Narration & Auto-Presentation Teleprompter Bar */}
+      {(narration.showCaption || autoPresent || presentationCompleted) && (
+        <div
+          data-html2canvas-ignore="true"
+          className="fixed bottom-16 left-1/2 z-30 w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2"
+        >
+          <div
+            className={`rounded-2xl px-4 py-2.5 text-xs shadow-xl ${
+              isBenchmark ? 'dark-glass-panel text-slate-200' : 'glass-panel text-slate-700'
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={narration.togglePlay}
+                  className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                    narration.isSpeaking || narration.isLoadingAudio
+                      ? 'bg-[#FF2E93] text-white'
+                      : 'bg-[#0284C7] text-white'
+                  }`}
+                >
+                  {narration.isLoadingAudio ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" /> Generando voz...
+                    </>
+                  ) : narration.isSpeaking ? (
+                    <>
+                      <Pause className="h-3 w-3" /> Pausar
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3 w-3" /> Reproducir
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={narration.cycleVoice}
+                  title="Cambiar locutor neural"
+                  className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                    isBenchmark
+                      ? 'bg-[#10B981]/20 text-[#10B981] hover:bg-[#10B981]/30'
+                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  }`}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {narration.engineMode === 'browser'
+                    ? 'Voz Local'
+                    : narration.voiceLabel}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => narration.setAutoNarrate(!narration.autoNarrate)}
+                  className={`h-6 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                    narration.autoNarrate
+                      ? 'bg-[#10B981] text-white'
+                      : isBenchmark
+                        ? 'bg-white/10 text-slate-300 hover:bg-white/20'
+                        : 'bg-slate-900/6 text-slate-600 hover:bg-slate-900/12'
+                  }`}
+                >
+                  {narration.autoNarrate ? 'Auto-narrar: ON' : 'Auto-narrar: OFF'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={narration.cycleRate}
+                  className={`font-mono-tabular h-6 rounded-md px-2 text-[11px] font-semibold ${
+                    isBenchmark
+                      ? 'bg-white/10 text-[#00F0FF] hover:bg-white/20'
+                      : 'bg-slate-900/6 text-[#0284C7] hover:bg-slate-900/12'
+                  }`}
+                >
+                  {narration.rate.toFixed(2).replace(/\.00$/, '.0')}x
+                </button>
+
+                {autoPresent && (
+                  <span
+                    className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold ${
+                      isBenchmark
+                        ? 'bg-[#FF2E93]/20 text-[#FF2E93]'
+                        : 'bg-rose-50 text-rose-600'
+                    }`}
+                  >
+                    ● Auto-Keynote {!isBenchmark ? '(1/2)' : '(2/2)'}
+                  </span>
+                )}
+
+                {presentationCompleted && !autoPresent && (
+                  <button
+                    type="button"
+                    onClick={startKeynoteFromBeginning}
+                    className="inline-flex h-6 items-center gap-1 rounded-md bg-[#10B981] px-2 text-[11px] font-semibold text-white hover:bg-emerald-600"
+                  >
+                    <CheckCircle2 className="h-3 w-3" /> Recorrido completo · Repetir
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  clearAutoAdvanceTimer();
+                  setAutoPresent(false);
+                  setPresentationCompleted(false);
+                  narration.stop();
+                  narration.setAutoNarrate(false);
+                  narration.setShowCaption(false);
+                }}
+                aria-label="Cerrar barra de narración"
+                className={`rounded-md p-1 transition-colors ${
+                  isBenchmark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-[#0F172A]'
+                }`}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            {narration.errorNotice && narration.engineMode === 'browser' && (
+              <p className="mt-1 text-[11px] text-amber-500">
+                Usando voz local de respaldo ({narration.errorNotice})
+              </p>
+            )}
+            <p className="mt-1.5 line-clamp-2 leading-relaxed">
+              {narration.activeScript}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Static Export & Cloudflare Deep-Link Modal */}
       <ExportReportModal
