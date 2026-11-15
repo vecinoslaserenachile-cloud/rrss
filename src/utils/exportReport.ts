@@ -3,10 +3,18 @@ import { jsPDF } from 'jspdf';
 import {
   ACTORS_LIKES_DATA,
   SLIDES,
-  SlideMeta,
   TOP_20_LIKES,
   formatSpanishInt,
 } from '../data/coquimboData';
+
+export interface ExportableSlideMeta {
+  id: number;
+  slug: string;
+  shortLabel: string;
+  title: string;
+}
+
+export type ExportTheme = 'light' | 'dark';
 
 // 16:9 Widescreen executive slide dimensions in mm (13.333 in x 7.5 in)
 const PDF_PAGE_W = 338.67;
@@ -42,10 +50,13 @@ function triggerDownload(blobOrUrl: Blob | string, filename: string) {
   }
 }
 
-async function captureStageCanvas(stageEl: HTMLElement): Promise<HTMLCanvasElement> {
+async function captureStageCanvas(
+  stageEl: HTMLElement,
+  theme: ExportTheme = 'light'
+): Promise<HTMLCanvasElement> {
   const captureScale = Math.min(window.devicePixelRatio || 1.5, 2);
   return html2canvas(stageEl, {
-    backgroundColor: '#F4F7FB',
+    backgroundColor: theme === 'dark' ? '#060B19' : '#F4F7FB',
     scale: captureScale,
     useCORS: true,
     allowTaint: false,
@@ -59,13 +70,21 @@ function drawSlidePageInPdf(
   slideNum: number,
   totalSlides: number,
   slideLabel: string,
-  issuedDate: string
+  issuedDate: string,
+  theme: ExportTheme = 'light',
+  reportSubtitle = 'Coquimbo Digital 2026 (14 oct – 14 nov)',
+  unitWord = 'Lámina'
 ) {
-  // Editorial background fill
-  doc.setFillColor(244, 247, 251);
+  const isDark = theme === 'dark';
+
+  // Background fill
+  if (isDark) {
+    doc.setFillColor(6, 11, 25);
+  } else {
+    doc.setFillColor(244, 247, 251);
+  }
   doc.rect(0, 0, PDF_PAGE_W, PDF_PAGE_H, 'F');
 
-  // Fit captured 3D + Bento canvas into content area above footer without stretching
   const availW = PDF_PAGE_W;
   const availH = PDF_PAGE_H - FOOTER_H;
   const srcRatio = capturedCanvas.width / capturedCanvas.height;
@@ -90,36 +109,57 @@ function drawSlidePageInPdf(
   doc.addImage(imgData, 'JPEG', offsetX, offsetY, drawW, drawH, undefined, 'FAST');
 
   // Crisp bottom executive footer strip
-  doc.setFillColor(255, 255, 255);
-  doc.rect(0, PDF_PAGE_H - FOOTER_H, PDF_PAGE_W, FOOTER_H, 'F');
-
-  doc.setDrawColor(226, 232, 240);
+  if (isDark) {
+    doc.setFillColor(10, 17, 36);
+    doc.rect(0, PDF_PAGE_H - FOOTER_H, PDF_PAGE_W, FOOTER_H, 'F');
+    doc.setDrawColor(30, 41, 59);
+  } else {
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, PDF_PAGE_H - FOOTER_H, PDF_PAGE_W, FOOTER_H, 'F');
+    doc.setDrawColor(226, 232, 240);
+  }
   doc.setLineWidth(0.3);
   doc.line(0, PDF_PAGE_H - FOOTER_H, PDF_PAGE_W, PDF_PAGE_H - FOOTER_H);
 
-  // Accent indicator dot/bar
-  doc.setFillColor(2, 132, 199);
+  // Accent bar
+  if (isDark) {
+    doc.setFillColor(0, 240, 255);
+  } else {
+    doc.setFillColor(2, 132, 199);
+  }
   doc.rect(10, PDF_PAGE_H - FOOTER_H + 3.2, 2.2, 3.6, 'F');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.setTextColor(15, 23, 42);
+  if (isDark) {
+    doc.setTextColor(248, 250, 252);
+  } else {
+    doc.setTextColor(15, 23, 42);
+  }
   doc.text('reporte.vecinoslaserena.cl', 14.5, PDF_PAGE_H - 3.6);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
+  if (isDark) {
+    doc.setTextColor(148, 163, 184);
+  } else {
+    doc.setTextColor(100, 116, 139);
+  }
   doc.text(
-    `Coquimbo Digital 2026 (14 oct – 14 nov)  ·  ${slideLabel}  ·  ${issuedDate}`,
+    `${reportSubtitle}  ·  ${slideLabel}  ·  ${issuedDate}`,
     60,
     PDF_PAGE_H - 3.6
   );
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.setTextColor(2, 132, 199);
+  if (isDark) {
+    doc.setTextColor(0, 240, 255);
+  } else {
+    doc.setTextColor(2, 132, 199);
+  }
   doc.text(
-    `Lámina ${String(slideNum).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`,
+    `${unitWord} ${String(slideNum).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`,
     PDF_PAGE_W - 10,
     PDF_PAGE_H - 3.6,
     { align: 'right' }
@@ -129,11 +169,9 @@ function drawSlidePageInPdf(
 function drawAuditedTablesAppendixPage(doc: jsPDF, issuedDate: string) {
   doc.addPage([PDF_PAGE_W, PDF_PAGE_H], 'landscape');
 
-  // Background
   doc.setFillColor(244, 247, 251);
   doc.rect(0, 0, PDF_PAGE_W, PDF_PAGE_H, 'F');
 
-  // Header
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(2, 132, 199);
@@ -152,7 +190,6 @@ function drawAuditedTablesAppendixPage(doc: jsPDF, issuedDate: string) {
     24.5
   );
 
-  // Two side-by-side white cards
   const cardY = 29;
   const cardH = 148;
   const leftX = 12;
@@ -160,7 +197,6 @@ function drawAuditedTablesAppendixPage(doc: jsPDF, issuedDate: string) {
   const rightX = 172;
   const rightW = 154.67;
 
-  // Left card: Top 20 Likes
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(226, 232, 240);
   doc.roundedRect(leftX, cardY, leftW, cardH, 3, 3, 'FD');
@@ -170,7 +206,6 @@ function drawAuditedTablesAppendixPage(doc: jsPDF, issuedDate: string) {
   doc.setTextColor(15, 23, 42);
   doc.text('1. Ranking Top 20 Me Gusta (3.132.700 total)', leftX + 5, cardY + 7);
 
-  // Table header
   const lHeadY = cardY + 13;
   doc.setFillColor(241, 245, 249);
   doc.rect(leftX + 4, lHeadY - 3.5, leftW - 8, 5.5, 'F');
@@ -212,7 +247,6 @@ function drawAuditedTablesAppendixPage(doc: jsPDF, issuedDate: string) {
     doc.text(formatSpanishInt(row.likes), leftX + leftW - 6, ry, { align: 'right' });
   });
 
-  // Right card: 22 Actors @Instagram
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(226, 232, 240);
   doc.roundedRect(rightX, cardY, rightW, cardH, 3, 3, 'FD');
@@ -261,7 +295,6 @@ function drawAuditedTablesAppendixPage(doc: jsPDF, issuedDate: string) {
     doc.text(actor.likesLabel, rightX + rightW - 6, ry, { align: 'right' });
   });
 
-  // Footer
   doc.setFillColor(255, 255, 255);
   doc.rect(0, PDF_PAGE_H - FOOTER_H, PDF_PAGE_W, FOOTER_H, 'F');
   doc.setDrawColor(226, 232, 240);
@@ -292,28 +325,38 @@ function drawAuditedTablesAppendixPage(doc: jsPDF, issuedDate: string) {
 
 export async function exportCurrentSlidePng(
   stageEl: HTMLElement,
-  slideMeta: SlideMeta,
-  renderCurrentFrame: () => void
+  slideMeta: ExportableSlideMeta,
+  renderCurrentFrame: () => void,
+  options?: { theme?: ExportTheme; prefix?: string }
 ): Promise<void> {
   renderCurrentFrame();
   await waitFrames(1);
-  const canvas = await captureStageCanvas(stageEl);
+  const canvas = await captureStageCanvas(stageEl, options?.theme ?? 'light');
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, 'image/png', 1.0)
   );
   if (!blob) throw new Error('No se pudo generar la imagen PNG.');
   const num = String(slideMeta.id + 1).padStart(2, '0');
-  triggerDownload(blob, `Coquimbo_Digital_Lamina_${num}_${slideMeta.slug}.png`);
+  const prefix = options?.prefix ?? 'Coquimbo_Digital_Lamina';
+  triggerDownload(blob, `${prefix}_${num}_${slideMeta.slug}.png`);
 }
 
 export async function exportCurrentSlidePdf(
   stageEl: HTMLElement,
-  slideMeta: SlideMeta,
-  renderCurrentFrame: () => void
+  slideMeta: ExportableSlideMeta,
+  renderCurrentFrame: () => void,
+  options?: {
+    theme?: ExportTheme;
+    totalCount?: number;
+    prefix?: string;
+    reportSubtitle?: string;
+    unitWord?: string;
+  }
 ): Promise<void> {
+  const theme = options?.theme ?? 'light';
   renderCurrentFrame();
   await waitFrames(1);
-  const canvas = await captureStageCanvas(stageEl);
+  const canvas = await captureStageCanvas(stageEl, theme);
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -331,17 +374,27 @@ export async function exportCurrentSlidePdf(
     doc,
     canvas,
     slideMeta.id + 1,
-    SLIDES.length,
+    options?.totalCount ?? SLIDES.length,
     slideMeta.title,
-    issuedDate
+    issuedDate,
+    theme,
+    options?.reportSubtitle,
+    options?.unitWord
   );
 
   const num = String(slideMeta.id + 1).padStart(2, '0');
-  doc.save(`Coquimbo_Digital_Lamina_${num}_${slideMeta.slug}.pdf`);
+  const prefix = options?.prefix ?? 'Coquimbo_Digital_Lamina';
+  doc.save(`${prefix}_${num}_${slideMeta.slug}.pdf`);
 }
 
 export interface FullPdfExportOptions {
   stageEl: HTMLElement;
+  slides?: ExportableSlideMeta[];
+  theme?: ExportTheme;
+  filename?: string;
+  reportSubtitle?: string;
+  unitWord?: string;
+  includeAppendix?: boolean;
   prepareSlide3D: (slideIdx: number) => void;
   setActiveSlideForCapture: (slideIdx: number) => void;
   onProgress?: (current: number, total: number, slideTitle: string) => void;
@@ -349,6 +402,12 @@ export interface FullPdfExportOptions {
 
 export async function exportFullPresentationPdf({
   stageEl,
+  slides = SLIDES,
+  theme = 'light',
+  filename = 'Reporte_Coquimbo_Digital_2026.pdf',
+  reportSubtitle = 'Coquimbo Digital 2026 (14 oct – 14 nov)',
+  unitWord = 'Lámina',
+  includeAppendix = true,
   prepareSlide3D,
   setActiveSlideForCapture,
   onProgress,
@@ -366,19 +425,17 @@ export async function exportFullPresentationPdf({
     year: 'numeric',
   });
 
-  for (let i = 0; i < SLIDES.length; i++) {
-    const slide = SLIDES[i];
-    onProgress?.(i + 1, SLIDES.length, slide.title);
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i];
+    onProgress?.(i + 1, slides.length, slide.title);
 
-    // Sync React slide state and wait for DOM paint
     setActiveSlideForCapture(i);
     await waitFrames(3);
 
-    // Synchronously snap 3D scene camera + scale + render fresh WebGL buffer
     prepareSlide3D(i);
     await waitFrames(1);
 
-    const canvas = await captureStageCanvas(stageEl);
+    const canvas = await captureStageCanvas(stageEl, theme);
 
     if (i > 0) {
       doc.addPage([PDF_PAGE_W, PDF_PAGE_H], 'landscape');
@@ -388,14 +445,18 @@ export async function exportFullPresentationPdf({
       doc,
       canvas,
       i + 1,
-      SLIDES.length,
+      slides.length,
       slide.title,
-      issuedDate
+      issuedDate,
+      theme,
+      reportSubtitle,
+      unitWord
     );
   }
 
-  // Append full audited statistical tables appendix page
-  drawAuditedTablesAppendixPage(doc, issuedDate);
+  if (includeAppendix) {
+    drawAuditedTablesAppendixPage(doc, issuedDate);
+  }
 
-  doc.save('Reporte_Coquimbo_Digital_2026.pdf');
+  doc.save(filename);
 }

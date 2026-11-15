@@ -285,3 +285,179 @@ export function createPieSliceLabelTexture(
   return texture;
 }
 
+/**
+ * Generates a subtle sci-fi telemetry radial + orthogonal dark floor grid texture.
+ */
+export function createDarkTelemetryGridTexture(maxAnisotropy: number): THREE.CanvasTexture {
+  const size = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.clearRect(0, 0, size, size);
+
+  const step = 64;
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= size; i += step) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, size);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(size, i);
+    ctx.stroke();
+  }
+
+  const cx = size / 2;
+  const cy = size / 2;
+  [140, 260, 380, 480].forEach((r, idx) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle =
+      idx === 3 ? 'rgba(255, 46, 147, 0.22)' : 'rgba(0, 240, 255, 0.16)';
+    ctx.lineWidth = idx === 3 ? 2 : 1.5;
+    ctx.stroke();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = Math.min(maxAnisotropy, 8);
+  return texture;
+}
+
+/**
+ * Generates a dark glassmorphism vertical bar label texture for Benchmark 3D bars.
+ */
+export function createDarkVerticalBarLabelTexture(
+  name: string,
+  pctLabel: string,
+  accentHex: string
+): THREE.CanvasTexture {
+  const width = 148;
+  const height = 560;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.clearRect(0, 0, width, height);
+
+  const displayName = name.length > 22 ? `${name.slice(0, 20)}…` : name;
+  ctx.font = '700 24px "Plus Jakarta Sans", system-ui, sans-serif';
+  const textLen = Math.min(390, ctx.measureText(displayName).width);
+
+  const cardW = 94;
+  const cardX = (width - cardW) / 2;
+  const bottomY = height - 10;
+  const pctBadgeH = 44;
+  const cardH = pctBadgeH + textLen + 36;
+  const cardY = bottomY - cardH;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 4;
+
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, 16);
+  ctx.fillStyle = 'rgba(11, 18, 36, 0.9)';
+  ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, 16);
+  ctx.stroke();
+
+  const badgePad = 6;
+  ctx.fillStyle = accentHex;
+  ctx.beginPath();
+  ctx.roundRect(
+    cardX + badgePad,
+    bottomY - pctBadgeH - badgePad,
+    cardW - badgePad * 2,
+    pctBadgeH,
+    11
+  );
+  ctx.fill();
+
+  ctx.fillStyle = '#060B19';
+  ctx.font = '700 21px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(pctLabel, width / 2, bottomY - badgePad - pctBadgeH / 2 + 1);
+
+  ctx.save();
+  ctx.translate(width / 2, bottomY - pctBadgeH - badgePad - 16);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#F8FAFC';
+  ctx.font = '700 24px "Plus Jakarta Sans", system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(displayName, 0, 1, 390);
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Generates a dark glass floating badge for 3D scatter nodes, donut slices, and axis ticks.
+ */
+export function createDarkFloatingBadgeTexture(
+  title: string,
+  sublabel: string,
+  accentHex: string
+): THREE.CanvasTexture {
+  const width = 420;
+  const height = 112;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.clearRect(0, 0, width, height);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 4;
+  ctx.beginPath();
+  ctx.roundRect(10, 10, width - 20, height - 20, 18);
+  ctx.fillStyle = 'rgba(10, 17, 34, 0.92)';
+  ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(10, 10, width - 20, height - 20, 18);
+  ctx.stroke();
+
+  ctx.fillStyle = accentHex;
+  ctx.beginPath();
+  ctx.roundRect(24, 26, 10, height - 52, 5);
+  ctx.fill();
+
+  ctx.fillStyle = '#F8FAFC';
+  ctx.font = '700 25px "Plus Jakarta Sans", system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  const shortTitle = title.length > 23 ? `${title.slice(0, 21)}…` : title;
+  ctx.fillText(shortTitle, 46, 42);
+
+  ctx.fillStyle = accentHex;
+  ctx.font = '700 22px "JetBrains Mono", monospace';
+  ctx.fillText(sublabel, 46, 74);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
