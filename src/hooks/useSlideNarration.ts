@@ -24,8 +24,33 @@ interface UseSlideNarrationOptions {
 const blobUrlCache = new Map<string, string>();
 const inFlightAudioFetches = new Map<string, Promise<string>>();
 
-function getCacheKey(voice: NarrationVoiceId, slideKey: string) {
-  return `${voice}::${slideKey}`;
+const STATIC_AUDIO_VERSION = '20261115b';
+const VALID_STATIC_KORE_TRACKS = new Set([
+  'ecosistema-0',
+  'ecosistema-1',
+  'ecosistema-2',
+  'ecosistema-4',
+  'ecosistema-5',
+  'ecosistema-6',
+  'ecosistema-7',
+  'ecosistema-8',
+  'benchmark-0',
+  'benchmark-1',
+  'benchmark-3',
+  'benchmark-4',
+  'benchmark-5',
+]);
+
+function hashScript(text: string): string {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) {
+    h = (Math.imul(31, h) + text.charCodeAt(i)) | 0;
+  }
+  return `${text.length}_${h >>> 0}`;
+}
+
+function getCacheKey(voice: NarrationVoiceId, slideKey: string, text: string) {
+  return `${voice}::${slideKey}::${hashScript(text)}`;
 }
 
 async function fetchStaticOrNeuralAudioUrl(
@@ -33,7 +58,7 @@ async function fetchStaticOrNeuralAudioUrl(
   text: string,
   voiceName: NarrationVoiceId
 ): Promise<string> {
-  const key = getCacheKey(voiceName, slideKey);
+  const key = getCacheKey(voiceName, slideKey, text);
   const existing = blobUrlCache.get(key);
   if (existing) return existing;
 
@@ -41,20 +66,25 @@ async function fetchStaticOrNeuralAudioUrl(
   if (inflight) return inflight;
 
   const promise = (async () => {
-    // 1. Try pre-generated static Gemini Neural MP3 first (instant, works on Cloudflare too)
-    try {
-      const staticRes = await fetch(`/audio/${voiceName}/${slideKey}.mp3`);
-      const contentType = staticRes.headers.get('content-type')?.toLowerCase() ?? '';
-      if (staticRes.ok && contentType.includes('audio')) {
-        const mp3Blob = await staticRes.blob();
-        if (mp3Blob.size > 1024) {
-          const url = URL.createObjectURL(mp3Blob);
-          blobUrlCache.set(key, url);
-          return url;
+    // 1. Try pre-generated static Gemini Neural MP3 only for verified unchanged tracks
+    if (voiceName === 'Kore' && VALID_STATIC_KORE_TRACKS.has(slideKey)) {
+      try {
+        const staticRes = await fetch(
+          `/audio/${voiceName}/${slideKey}.mp3?v=${STATIC_AUDIO_VERSION}`,
+          { cache: 'no-cache' }
+        );
+        const contentType = staticRes.headers.get('content-type')?.toLowerCase() ?? '';
+        if (staticRes.ok && contentType.includes('audio')) {
+          const mp3Blob = await staticRes.blob();
+          if (mp3Blob.size > 1024) {
+            const url = URL.createObjectURL(mp3Blob);
+            blobUrlCache.set(key, url);
+            return url;
+          }
         }
+      } catch {
+        // Static track not present for this voice; proceed to live Gemini TTS API
       }
-    } catch {
-      // Static track not present for this voice; proceed to live Gemini TTS API
     }
 
     // 2. Dynamically synthesize via server-side Gemini 3.8 Neural TTS
@@ -374,7 +404,7 @@ export function useSlideNarration({
       setAutoplayBlocked(false);
       setShowCaption(true);
 
-      const cacheKey = getCacheKey(targetVoice, slideKey);
+      const cacheKey = getCacheKey(targetVoice, slideKey, script);
       const isCached = blobUrlCache.has(cacheKey);
       if (!isCached) {
         setIsLoadingAudio(true);
