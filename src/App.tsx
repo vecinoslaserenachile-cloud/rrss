@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Cpu,
   Eye,
   EyeOff,
@@ -11,6 +13,8 @@ import {
   Home,
   LayoutGrid,
   Loader2,
+  Maximize2,
+  Minimize2,
   Orbit,
   Play,
   Pause,
@@ -97,6 +101,8 @@ export default function App() {
   const [freeOrbitMode, setFreeOrbitMode] = useState<boolean>(false);
   const [hudCollapsed, setHudCollapsed] = useState<boolean>(false);
   const [resetCameraNonce, setResetCameraNonce] = useState<number>(0);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [teleprompterMinimized, setTeleprompterMinimized] = useState<boolean>(false);
 
   // Static export & share modal state
   const [exportOpen, setExportOpen] = useState<boolean>(false);
@@ -387,6 +393,27 @@ export default function App() {
     setResetCameraNonce((n) => n + 1);
   }, [clearAutoAdvanceTimer]);
 
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+      window.dispatchEvent(new Event('resize'));
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      // Safe fallback if browser or iframe blocks Fullscreen API
+    }
+  }, []);
+
   const handleExport = useCallback(
     async (mode: ExportMode) => {
       const stageEl = captureStageRef.current;
@@ -508,12 +535,27 @@ export default function App() {
       } else if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
         narration.togglePlay();
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        void toggleFullscreen();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        setTeleprompterMinimized((prev) => !prev);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToIndex, handleResetCamera, isBenchmark, isExporting, narration, nextItem, prevItem]);
+  }, [
+    goToIndex,
+    handleResetCamera,
+    isBenchmark,
+    isExporting,
+    narration,
+    nextItem,
+    prevItem,
+    toggleFullscreen,
+  ]);
 
   const itemsList = isBenchmark ? BENCHMARK_CHAPTERS : SLIDES;
   const currentIdx = isBenchmark ? activeBenchChapter : activeSlide;
@@ -835,6 +877,31 @@ export default function App() {
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
 
+          <button
+            type="button"
+            onClick={() => void toggleFullscreen()}
+            title={isFullscreen ? 'Salir de pantalla completa (F)' : 'Pantalla completa (F)'}
+            aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
+            className={`inline-flex h-8 items-center justify-center gap-1 rounded-xl px-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+              isFullscreen
+                ? isBenchmark
+                  ? 'bg-[#00F0FF]/20 text-[#00F0FF]'
+                  : 'bg-[#0284C7]/15 text-[#0284C7]'
+                : isBenchmark
+                  ? 'text-slate-300 hover:bg-white/10 hover:text-white'
+                  : 'text-slate-700 hover:bg-slate-900/5 hover:text-[#0F172A]'
+            }`}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize2 className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden lg:inline">
+              {isFullscreen ? 'Salir' : 'Pantalla Completa'}
+            </span>
+          </button>
+
           <div
             className={`mx-0.5 sm:mx-1 h-4 w-px ${isBenchmark ? 'bg-white/15' : 'bg-slate-900/10'}`}
           />
@@ -914,106 +981,42 @@ export default function App() {
       </div>
 
       {/* Live Professional Audio Narration & Auto-Presentation Teleprompter Bar */}
-      {(narration.showCaption || autoPresent || presentationCompleted) && (
-        <div
-          data-html2canvas-ignore="true"
-          className="fixed bottom-[4.25rem] sm:bottom-16 left-1/2 z-30 w-[calc(100vw-1rem)] sm:w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2"
-        >
+      {(narration.showCaption || autoPresent || presentationCompleted) &&
+        (teleprompterMinimized ? (
           <div
-            className={`rounded-2xl px-4 py-2.5 text-xs shadow-xl ${
-              isBenchmark ? 'dark-glass-panel text-slate-200' : 'glass-panel text-slate-700'
-            }`}
+            data-html2canvas-ignore="true"
+            className="fixed bottom-[4.25rem] right-3 z-30 max-w-[calc(100vw-1.5rem)] sm:bottom-16 sm:right-6"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={narration.togglePlay}
-                  className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold transition-colors ${
-                    narration.isSpeaking || narration.isLoadingAudio
-                      ? 'bg-[#FF2E93] text-white'
-                      : 'bg-[#0284C7] text-white'
-                  }`}
-                >
-                  {narration.isLoadingAudio ? (
-                    <>
-                      <Loader2 className="h-3 w-3 animate-spin" /> Generando voz...
-                    </>
-                  ) : narration.isSpeaking ? (
-                    <>
-                      <Pause className="h-3 w-3" /> Pausar
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-3 w-3" /> Reproducir
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={narration.cycleVoice}
-                  title="Cambiar locutor neural"
-                  className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold transition-colors ${
-                    isBenchmark
-                      ? 'bg-[#10B981]/20 text-[#10B981] hover:bg-[#10B981]/30'
-                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                  }`}
-                >
-                  <Sparkles className="h-3 w-3" />
-                  {narration.engineMode === 'browser'
-                    ? 'Voz Local'
-                    : narration.voiceLabel}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => narration.setAutoNarrate(!narration.autoNarrate)}
-                  className={`h-6 rounded-md px-2 text-[11px] font-semibold transition-colors ${
-                    narration.autoNarrate
-                      ? 'bg-[#10B981] text-white'
-                      : isBenchmark
-                        ? 'bg-white/10 text-slate-300 hover:bg-white/20'
-                        : 'bg-slate-900/6 text-slate-600 hover:bg-slate-900/12'
-                  }`}
-                >
-                  {narration.autoNarrate ? 'Auto-narrar: ON' : 'Auto-narrar: OFF'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={narration.cycleRate}
-                  className={`font-mono-tabular h-6 rounded-md px-2 text-[11px] font-semibold ${
-                    isBenchmark
-                      ? 'bg-white/10 text-[#00F0FF] hover:bg-white/20'
-                      : 'bg-slate-900/6 text-[#0284C7] hover:bg-slate-900/12'
-                  }`}
-                >
-                  {narration.rate.toFixed(2).replace(/\.00$/, '.0')}x
-                </button>
-
-                {autoPresent && (
-                  <span
-                    className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold ${
-                      isBenchmark
-                        ? 'bg-[#FF2E93]/20 text-[#FF2E93]'
-                        : 'bg-rose-50 text-rose-600'
-                    }`}
-                  >
-                    ● Auto-Keynote {!isBenchmark ? '(1/2)' : '(2/2)'}
-                  </span>
+            <div
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs shadow-xl ${
+                isBenchmark ? 'dark-glass-panel text-slate-200' : 'glass-panel text-slate-700'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={narration.togglePlay}
+                title={narration.isSpeaking ? 'Pausar narración' : 'Reproducir narración'}
+                className={`inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold transition-colors ${
+                  narration.isSpeaking || narration.isLoadingAudio
+                    ? 'bg-[#FF2E93] text-white'
+                    : 'bg-[#0284C7] text-white'
+                }`}
+              >
+                {narration.isLoadingAudio ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : narration.isSpeaking ? (
+                  <Pause className="h-3 w-3" />
+                ) : (
+                  <Play className="h-3 w-3" />
                 )}
-
-                {presentationCompleted && !autoPresent && (
-                  <button
-                    type="button"
-                    onClick={startKeynoteFromBeginning}
-                    className="inline-flex h-6 items-center gap-1 rounded-md bg-[#10B981] px-2 text-[11px] font-semibold text-white hover:bg-emerald-600"
-                  >
-                    <CheckCircle2 className="h-3 w-3" /> Recorrido completo · Repetir
-                  </button>
-                )}
-              </div>
+                <span>
+                  {autoPresent
+                    ? `Auto ${!isBenchmark ? '1/2' : '2/2'}`
+                    : narration.isSpeaking
+                      ? 'Audio'
+                      : 'Pausa'}
+                </span>
+              </button>
 
               {narration.autoplayBlocked && (
                 <button
@@ -1022,11 +1025,42 @@ export default function App() {
                     narration.unlockAudio();
                     void narration.speakCurrent();
                   }}
-                  className="inline-flex h-6 items-center gap-1 rounded-md bg-amber-500 px-2.5 text-[11px] font-semibold text-white hover:bg-amber-600"
+                  className="inline-flex h-6 items-center gap-1 rounded-full bg-amber-500 px-2 text-[11px] font-semibold text-white hover:bg-amber-600"
                 >
-                  <Volume2 className="h-3 w-3" /> Activar Audio
+                  <Volume2 className="h-3 w-3" /> Activar
                 </button>
               )}
+
+              {activeCue && (
+                <div
+                  className={`hidden h-1.5 w-14 overflow-hidden rounded-full sm:block ${
+                    isBenchmark ? 'bg-white/15' : 'bg-slate-200'
+                  }`}
+                  title={`Cámara: ${activeCue.focusBadge}`}
+                >
+                  <div
+                    className={`h-full rounded-full transition-[width] duration-150 ${
+                      isBenchmark ? 'bg-[#00F0FF]' : 'bg-[#0284C7]'
+                    }`}
+                    style={{ width: `${Math.round(narration.progress * 100)}%` }}
+                  />
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setTeleprompterMinimized(false)}
+                title="Expandir teleprompter (M)"
+                aria-label="Expandir barra de narración"
+                className={`inline-flex h-6 items-center gap-1 rounded-full px-2 text-[11px] font-semibold transition-colors ${
+                  isBenchmark
+                    ? 'bg-white/10 text-[#00F0FF] hover:bg-white/20'
+                    : 'bg-slate-900/6 text-[#0284C7] hover:bg-slate-900/12'
+                }`}
+              >
+                <ChevronUp className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Expandir</span>
+              </button>
 
               <button
                 type="button"
@@ -1036,55 +1070,211 @@ export default function App() {
                   setHighlightedRank(null);
                   setResetCameraNonce((n) => n + 1);
                   setPresentationCompleted(false);
+                  setTeleprompterMinimized(false);
                   narration.stop();
                   narration.setAutoNarrate(false);
                   narration.setShowCaption(false);
                 }}
+                title="Cerrar y detener narración"
                 aria-label="Cerrar barra de narración"
-                className={`rounded-md p-1 transition-colors ${
+                className={`rounded-full p-1 transition-colors ${
                   isBenchmark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-[#0F172A]'
                 }`}
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            {narration.errorNotice && narration.engineMode === 'browser' && (
-              <p className="mt-1 text-[11px] text-amber-500">
-                Voz alternativa activa para esta pista (puedes volver a Sofía Neural HD cuando quieras).
-              </p>
-            )}
-            {activeCue && (
-              <div className="mt-1.5 flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${
-                    isBenchmark
-                      ? 'border border-[#00F0FF]/35 bg-[#00F0FF]/12 text-[#00F0FF]'
-                      : 'border border-[#0284C7]/25 bg-[#0284C7]/10 text-[#0284C7]'
-                  }`}
-                >
-                  <Focus className="h-3 w-3 shrink-0" />
-                  <span>Cámara: {activeCue.focusBadge}</span>
-                </span>
-                <div
-                  className={`h-1 flex-1 overflow-hidden rounded-full ${
-                    isBenchmark ? 'bg-white/10' : 'bg-slate-200'
-                  }`}
-                >
-                  <div
-                    className={`h-full rounded-full transition-[width] duration-150 ${
-                      isBenchmark ? 'bg-[#00F0FF]' : 'bg-[#0284C7]'
+          </div>
+        ) : (
+          <div
+            data-html2canvas-ignore="true"
+            className="fixed bottom-[4.25rem] sm:bottom-16 left-1/2 z-30 w-[calc(100vw-1rem)] sm:w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2"
+          >
+            <div
+              className={`rounded-2xl px-4 py-2.5 text-xs shadow-xl ${
+                isBenchmark ? 'dark-glass-panel text-slate-200' : 'glass-panel text-slate-700'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={narration.togglePlay}
+                    className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                      narration.isSpeaking || narration.isLoadingAudio
+                        ? 'bg-[#FF2E93] text-white'
+                        : 'bg-[#0284C7] text-white'
                     }`}
-                    style={{ width: `${Math.round(narration.progress * 100)}%` }}
-                  />
+                  >
+                    {narration.isLoadingAudio ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" /> Generando voz...
+                      </>
+                    ) : narration.isSpeaking ? (
+                      <>
+                        <Pause className="h-3 w-3" /> Pausar
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-3 w-3" /> Reproducir
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={narration.cycleVoice}
+                    title="Cambiar locutor neural"
+                    className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                      isBenchmark
+                        ? 'bg-[#10B981]/20 text-[#10B981] hover:bg-[#10B981]/30'
+                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                    }`}
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {narration.engineMode === 'browser'
+                      ? 'Voz Local'
+                      : narration.voiceLabel}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => narration.setAutoNarrate(!narration.autoNarrate)}
+                    className={`h-6 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                      narration.autoNarrate
+                        ? 'bg-[#10B981] text-white'
+                        : isBenchmark
+                          ? 'bg-white/10 text-slate-300 hover:bg-white/20'
+                          : 'bg-slate-900/6 text-slate-600 hover:bg-slate-900/12'
+                    }`}
+                  >
+                    {narration.autoNarrate ? 'Auto-narrar: ON' : 'Auto-narrar: OFF'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={narration.cycleRate}
+                    className={`font-mono-tabular h-6 rounded-md px-2 text-[11px] font-semibold ${
+                      isBenchmark
+                        ? 'bg-white/10 text-[#00F0FF] hover:bg-white/20'
+                        : 'bg-slate-900/6 text-[#0284C7] hover:bg-slate-900/12'
+                    }`}
+                  >
+                    {narration.rate.toFixed(2).replace(/\.00$/, '.0')}x
+                  </button>
+
+                  {autoPresent && (
+                    <span
+                      className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold ${
+                        isBenchmark
+                          ? 'bg-[#FF2E93]/20 text-[#FF2E93]'
+                          : 'bg-rose-50 text-rose-600'
+                      }`}
+                    >
+                      ● Auto-Keynote {!isBenchmark ? '(1/2)' : '(2/2)'}
+                    </span>
+                  )}
+
+                  {presentationCompleted && !autoPresent && (
+                    <button
+                      type="button"
+                      onClick={startKeynoteFromBeginning}
+                      className="inline-flex h-6 items-center gap-1 rounded-md bg-[#10B981] px-2 text-[11px] font-semibold text-white hover:bg-emerald-600"
+                    >
+                      <CheckCircle2 className="h-3 w-3" /> Recorrido completo · Repetir
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {narration.autoplayBlocked && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        narration.unlockAudio();
+                        void narration.speakCurrent();
+                      }}
+                      className="inline-flex h-6 items-center gap-1 rounded-md bg-amber-500 px-2.5 text-[11px] font-semibold text-white hover:bg-amber-600"
+                    >
+                      <Volume2 className="h-3 w-3" /> Activar Audio
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setTeleprompterMinimized(true)}
+                    title="Minimizar ventana sin detener el audio (M)"
+                    aria-label="Minimizar barra de narración"
+                    className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                      isBenchmark
+                        ? 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+                        : 'bg-slate-900/6 text-slate-600 hover:bg-slate-900/12 hover:text-[#0F172A]'
+                    }`}
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Minimizar</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearAutoAdvanceTimer();
+                      setAutoPresent(false);
+                      setHighlightedRank(null);
+                      setResetCameraNonce((n) => n + 1);
+                      setPresentationCompleted(false);
+                      setTeleprompterMinimized(false);
+                      narration.stop();
+                      narration.setAutoNarrate(false);
+                      narration.setShowCaption(false);
+                    }}
+                    title="Cerrar y detener narración"
+                    aria-label="Cerrar barra de narración"
+                    className={`rounded-md p-1 transition-colors ${
+                      isBenchmark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-[#0F172A]'
+                    }`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
-            )}
-            <p className="mt-1.5 line-clamp-2 leading-relaxed">
-              {narration.activeScript}
-            </p>
+              {narration.errorNotice && narration.engineMode === 'browser' && (
+                <p className="mt-1 text-[11px] text-amber-500">
+                  Voz alternativa activa para esta pista (puedes volver a Sofía Neural HD cuando quieras).
+                </p>
+              )}
+              {activeCue && (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${
+                      isBenchmark
+                        ? 'border border-[#00F0FF]/35 bg-[#00F0FF]/12 text-[#00F0FF]'
+                        : 'border border-[#0284C7]/25 bg-[#0284C7]/10 text-[#0284C7]'
+                    }`}
+                  >
+                    <Focus className="h-3 w-3 shrink-0" />
+                    <span>Cámara: {activeCue.focusBadge}</span>
+                  </span>
+                  <div
+                    className={`h-1 flex-1 overflow-hidden rounded-full ${
+                      isBenchmark ? 'bg-white/10' : 'bg-slate-200'
+                    }`}
+                  >
+                    <div
+                      className={`h-full rounded-full transition-[width] duration-150 ${
+                        isBenchmark ? 'bg-[#00F0FF]' : 'bg-[#0284C7]'
+                      }`}
+                      style={{ width: `${Math.round(narration.progress * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              <p className="mt-1.5 line-clamp-2 leading-relaxed">
+                {narration.activeScript}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        ))}
 
       {/* Static Export & Cloudflare Deep-Link Modal */}
       <ExportReportModal

@@ -12,6 +12,7 @@ import {
   buildBenchmarkCh4FormatsSentiment,
   buildBenchmarkCh5Heatmap,
   buildBenchmarkCh6DualSummary,
+  buildBenchmarkCh6GlobalActors,
 } from '../three/benchmarkBuilders';
 import { createDarkTelemetryGridTexture } from '../three/proceduralTextures';
 import { BuiltSlideScene, HoverPayload } from '../three/slideBuilders';
@@ -280,7 +281,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
       const starfield = new THREE.Points(particleGeo, particleMat);
       scene.add(starfield);
 
-      // Build all 6 Benchmark chapters once
+      // Build all 8 Benchmark chapters once
       const ch2Data = buildBenchmarkCh2Duel();
       const builtChapters: BuiltSlideScene[] = [
         buildBenchmarkCh0Ecosystem(),
@@ -289,6 +290,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
         buildBenchmarkCh3OutliersScatter(),
         buildBenchmarkCh4FormatsSentiment(),
         buildBenchmarkCh5Heatmap(),
+        buildBenchmarkCh6GlobalActors(),
         buildBenchmarkCh6DualSummary(),
       ];
 
@@ -543,6 +545,22 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
                 node.baseY + Math.sin(elapsed * node.speed + node.phase) * 0.09;
             });
           }
+          if (anim.rankBars) {
+            const targetRank = highlightedRankRef.current;
+            anim.rankBars.forEach((item) => {
+              const isActive = targetRank === item.rank;
+              const targetYScale = isActive ? 1.14 : 1.0;
+              item.group.scale.y = THREE.MathUtils.damp(item.group.scale.y, targetYScale, 8, delta);
+              if (
+                item.mesh !== hoveredMesh &&
+                item.mesh.material instanceof THREE.MeshStandardMaterial
+              ) {
+                item.mesh.material.emissive.copy(item.baseColor);
+                item.mesh.material.emissiveIntensity = isActive ? 0.85 : 0.22;
+              }
+            });
+          }
+
           if (anim.pieSlices) {
             const targetRank = highlightedRankRef.current;
             anim.pieSlices.forEach((slice) => {

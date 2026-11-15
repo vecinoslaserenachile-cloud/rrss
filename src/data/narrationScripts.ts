@@ -46,6 +46,9 @@ export const BENCHMARK_NARRATIONS: string[] = [
   // Capítulo 5: Matriz Horaria Óptima y Recomendaciones Estratégicas
   'Cerramos nuestro recorrido con la matriz horaria óptima de siete días por ocho bloques. Mientras la mayoría de las cuentas publica entre lunes y viernes de 12 a 18 horas en plena saturación, la mayor tasa de respuesta ocurre entre viernes y domingo de 21 a cero horas, y los domingos a las 9 de la mañana. La hoja de ruta es clara: migrar carruseles a Reels, aprovechar las ventanas nocturnas de fin de semana y capitalizar hitos territoriales compartidos.',
 
-  // Capítulo 6: Resumen Ejecutivo Dual (Cierre de Ambos Reportes)
+  // Capítulo 6: Ranking Global de Actores, Personajes y Comunas
+  'Antes del cierre, reunimos en un solo anfiteatro tridimensional a los 18 actores más influyentes de la región, identificados con el retrato de cada autoridad y el símbolo de su ciudad o medio. En el bloque informativo destacan Mi Radio y Diario El Día en La Serena, seguidos por Guayacán, La Serena 4 y Papaya TV. En el ámbito público compiten cara a cara la Municipalidad de Coquimbo —con su Cruz del Tercer Milenio— y la Municipalidad de La Serena —con el Faro Monumental—, junto a liderazgos como Daniel Manouchehri, Daniela Norambuena, Ovalle, Illapel, Monte Patria, el alcalde Ahumada y Denis Cortés.',
+
+  // Capítulo 7: Resumen Ejecutivo Dual (Cierre de Ambos Reportes)
   'Como cierre final, aquí comparamos ambos estudios cara a cara. En el primer bloque, 20 cuentas de medios y comunidad acumularon más de 3 millones 130 mil me gusta en un mes, con un 1,06 por ciento de engagement. En el segundo bloque de 28 días, las 26 cuentas públicas registraron 478 mil 500 interacciones pero casi duplicaron la intensidad de respuesta con un 1,97 por ciento de engagement y un 75,4 por ciento de sentimiento positivo. Ambos reportes coinciden en la misma receta ganadora: priorizar Reels cortos y estrenar en ventana nocturna a las 21 horas. Puedes volver al inicio de cualquiera de los dos reportes desde los botones en pantalla. Muchas gracias por tu atención.',
 ];

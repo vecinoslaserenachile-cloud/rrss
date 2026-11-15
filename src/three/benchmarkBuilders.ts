@@ -10,6 +10,8 @@ import {
   HEATMAP_DAYS,
   HEATMAP_HOURS,
 } from '../data/benchmarkData';
+import { GLOBAL_ACTORS_RANKING } from '../data/globalActorsData';
+import { createActorEmblemTexture } from './actorEmblemTextures';
 import {
   createDarkFloatingBadgeTexture,
   createDarkVerticalBarLabelTexture,
@@ -1149,6 +1151,269 @@ export function buildBenchmarkCh6DualSummary(): BuiltSlideScene {
     hoverables,
     animatedObjects: { gyroRings, floatingNodes },
     cameraPreset: { position: [0, 5.1, 11.8], target: [0, 2.25, 0] },
+  };
+}
+
+/**
+ * CHAPTER 7 (index 6): Ranking Global de Actores — Anfiteatro 3D con retratos e iconos comunales
+ */
+export function buildBenchmarkCh6GlobalActors(): BuiltSlideScene {
+  const group = new THREE.Group();
+  const hoverables: THREE.Object3D[] = [];
+  const gyroRings: THREE.Mesh[] = [];
+  const floatingNodes: { obj: THREE.Object3D; baseY: number; phase: number; speed: number }[] = [];
+  const rankBars: {
+    rank: number;
+    group: THREE.Group;
+    mesh: THREE.Mesh;
+    baseColor: THREE.Color;
+  }[] = [];
+
+  const stage = new THREE.Group();
+  stage.position.set(2.6, 0, 0);
+  group.add(stage);
+
+  // Two-tier semicircular dark metallic amphitheater platform
+  const outerPlinth = new THREE.Mesh(
+    new THREE.CylinderGeometry(5.1, 5.4, 0.16, 64),
+    new THREE.MeshStandardMaterial({ color: '#0F172A', roughness: 0.36, metalness: 0.74 })
+  );
+  outerPlinth.position.y = 0.08;
+  stage.add(outerPlinth);
+
+  const outerRim = new THREE.Mesh(
+    new THREE.TorusGeometry(5.12, 0.035, 14, 96),
+    new THREE.MeshBasicMaterial({ color: '#00F0FF' })
+  );
+  outerRim.rotation.x = Math.PI / 2;
+  outerRim.position.y = 0.17;
+  stage.add(outerRim);
+
+  const innerRim = new THREE.Mesh(
+    new THREE.TorusGeometry(2.85, 0.025, 12, 80),
+    new THREE.MeshBasicMaterial({ color: '#FF2E93' })
+  );
+  innerRim.rotation.x = Math.PI / 2;
+  innerRim.position.y = 0.18;
+  stage.add(innerRim);
+
+  // Central holographic crest beacon
+  const centerOrb = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.46, 2),
+    makeNeonPhysicalMaterial('#10B981', 0.48, 0.16)
+  );
+  centerOrb.position.set(0, 1.35, 0.35);
+  stage.add(centerOrb);
+  floatingNodes.push({ obj: centerOrb, baseY: 1.35, phase: 0, speed: 1.5 });
+
+  const centerRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.86, 0.025, 14, 64),
+    makeNeonPhysicalMaterial('#00F0FF', 0.52, 0)
+  );
+  centerRing.position.set(0, 1.35, 0.35);
+  centerRing.rotation.set(0.75, 0.2, 0.35);
+  stage.add(centerRing);
+  gyroRings.push(centerRing);
+
+  // 3 Miniature Regional Architectural Landmark Beacons on the outer rim
+  // 1) Faro Monumental (La Serena sector)
+  const faroGroup = new THREE.Group();
+  faroGroup.position.set(-4.35, 0.16, 2.25);
+  const faroTower = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.16, 0.28, 1.15, 16),
+    new THREE.MeshStandardMaterial({ color: '#F8FAFC', roughness: 0.3, metalness: 0.4 })
+  );
+  faroTower.position.y = 0.58;
+  faroGroup.add(faroTower);
+  const faroLight = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 16, 16),
+    makeNeonPhysicalMaterial('#FFB800', 0.85, 0)
+  );
+  faroLight.position.y = 1.24;
+  faroGroup.add(faroLight);
+  stage.add(faroGroup);
+  registerDarkHoverable(
+    faroTower,
+    hoverables,
+    {
+      title: 'Hito Territorial · La Serena',
+      metric: 'Faro Monumental',
+      subtitle: 'Medios, municipio capital, Alcaldía y comunidad ciudadana',
+      color: '#00F0FF',
+    },
+    faroLight
+  );
+
+  // 2) Cruz del Tercer Milenio (Coquimbo sector)
+  const cruzGroup = new THREE.Group();
+  cruzGroup.position.set(4.35, 0.16, 2.25);
+  const cruzV = new THREE.Mesh(
+    new THREE.BoxGeometry(0.14, 1.28, 0.14),
+    makeNeonPhysicalMaterial('#10B981', 0.5, 0)
+  );
+  cruzV.position.y = 0.64;
+  cruzGroup.add(cruzV);
+  const cruzH = new THREE.Mesh(
+    new THREE.BoxGeometry(0.68, 0.14, 0.14),
+    makeNeonPhysicalMaterial('#10B981', 0.5, 0)
+  );
+  cruzH.position.y = 0.94;
+  cruzGroup.add(cruzH);
+  stage.add(cruzGroup);
+  registerDarkHoverable(
+    cruzV,
+    hoverables,
+    {
+      title: 'Hito Territorial · Coquimbo',
+      metric: 'Cruz del Tercer Milenio',
+      subtitle: 'Municipio Puerto y liderazgo parlamentario de la conurbación',
+      color: '#10B981',
+    },
+    cruzV
+  );
+
+  // 3) Observatorio Valle del Elqui / Limarí / Choapa (Rear North Crown)
+  const astroGroup = new THREE.Group();
+  astroGroup.position.set(0, 0.16, -4.45);
+  const astroBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.36, 0.45, 24),
+    new THREE.MeshStandardMaterial({ color: '#1E293B', roughness: 0.35, metalness: 0.7 })
+  );
+  astroBase.position.y = 0.22;
+  astroGroup.add(astroBase);
+  const astroDome = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+    makeNeonPhysicalMaterial('#38BDF8', 0.45, 0)
+  );
+  astroDome.position.y = 0.45;
+  astroGroup.add(astroDome);
+  stage.add(astroGroup);
+  registerDarkHoverable(
+    astroDome,
+    hoverables,
+    {
+      title: 'Provincias Elqui · Limarí · Choapa',
+      metric: 'Ovalle · Vicuña · Illapel · Monte Patria · Los Vilos',
+      subtitle: 'Identidad astronómica, hídrica y cordillerana de la región',
+      color: '#38BDF8',
+    },
+    astroDome
+  );
+
+  // Place all 18 actors in 2 concentric semicircular amphitheater arcs facing forward
+  const outerActors = GLOBAL_ACTORS_RANKING.slice(0, 9);
+  const innerActors = GLOBAL_ACTORS_RANKING.slice(9);
+
+  const avgScore =
+    GLOBAL_ACTORS_RANKING.reduce((acc, a) => acc + a.scoreIndex, 0) /
+    GLOBAL_ACTORS_RANKING.length;
+
+  const placeArc = (actors: typeof GLOBAL_ACTORS_RANKING, radius: number, maxH: number) => {
+    const startAngle = Math.PI * 0.92;
+    const endAngle = Math.PI * 0.08;
+    actors.forEach((actor, idx) => {
+      const t = actors.length > 1 ? idx / (actors.length - 1) : 0.5;
+      const angle = startAngle + (endAngle - startAngle) * t;
+      const x = Math.cos(angle) * radius;
+      const z = -Math.sin(angle) * radius + 0.55;
+      const h = 0.55 + (actor.scoreIndex / 100) * maxH;
+
+      const actorBarGroup = new THREE.Group();
+      actorBarGroup.position.set(x, 0.16, z);
+
+      const collar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.28, 0.1, 28),
+        new THREE.MeshStandardMaterial({ color: '#1E293B', roughness: 0.35, metalness: 0.8 })
+      );
+      collar.position.y = 0.05;
+      actorBarGroup.add(collar);
+
+      const rim = new THREE.Mesh(
+        new THREE.TorusGeometry(0.26, 0.015, 8, 28),
+        new THREE.MeshBasicMaterial({ color: actor.color })
+      );
+      rim.rotation.x = Math.PI / 2;
+      rim.position.y = 0.1;
+      actorBarGroup.add(rim);
+
+      const shaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.21, h, 28),
+        makeNeonPhysicalMaterial(actor.color, 0.22, 0.08)
+      );
+      shaft.position.y = 0.1 + h / 2;
+      actorBarGroup.add(shaft);
+
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.15, 0.18, 0.06, 28),
+        new THREE.MeshStandardMaterial({
+          color: '#E2E8F0',
+          emissive: new THREE.Color(actor.color),
+          emissiveIntensity: 0.35,
+          roughness: 0.2,
+          metalness: 0.6,
+        })
+      );
+      cap.position.y = 0.1 + h + 0.03;
+      actorBarGroup.add(cap);
+
+      const stemH = 0.18;
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.012, 0.012, stemH, 8),
+        new THREE.MeshBasicMaterial({ color: actor.color })
+      );
+      stem.position.y = 0.1 + h + 0.06 + stemH / 2;
+      actorBarGroup.add(stem);
+
+      const emblemTex = createActorEmblemTexture({
+        rank: actor.rank,
+        name: actor.name,
+        metric: actor.primaryMetricLabel,
+        color: actor.color,
+        emblemKind: actor.emblemKind,
+      });
+      const medallion = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: emblemTex,
+          transparent: true,
+          depthWrite: false,
+        })
+      );
+      medallion.center.set(0.5, 0);
+      medallion.scale.set(0.88, 0.96, 1);
+      medallion.position.y = 0.1 + h + 0.06 + stemH;
+      actorBarGroup.add(medallion);
+
+      const payload: HoverPayload = {
+        title: `#${actor.rank} · ${actor.name} (${actor.handle})`,
+        metric: `${actor.primaryMetricLabel} · ${actor.erLabel}`,
+        subtitle: `${actor.territory} · ${actor.highlightNote}`,
+        color: actor.color,
+        rank: actor.rank,
+        variancePct: calcVariancePct(actor.scoreIndex, avgScore),
+        averageLabel: `${Math.round(avgScore)} pts prom.`,
+      };
+
+      registerDarkHoverable(shaft, hoverables, payload, shaft);
+      registerDarkHoverable(medallion, hoverables, payload, shaft);
+
+      stage.add(actorBarGroup);
+      rankBars.push({
+        rank: actor.rank,
+        group: actorBarGroup,
+        mesh: shaft,
+        baseColor: new THREE.Color(actor.color),
+      });
+    });
+  };
+
+  placeArc(outerActors, 4.25, 2.75);
+  placeArc(innerActors, 2.55, 1.85);
+
+  return {
+    group,
+    hoverables,
+    animatedObjects: { gyroRings, floatingNodes, rankBars },
+    cameraPreset: { position: [2.6, 5.7, 13.8], target: [2.1, 2.3, 0] },
   };
 }
 

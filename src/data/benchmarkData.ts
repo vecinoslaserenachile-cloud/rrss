@@ -64,9 +64,18 @@ export const BENCHMARK_CHAPTERS: BenchmarkChapterMeta[] = [
   },
   {
     id: 6,
+    slug: 'ranking-global',
+    shortLabel: 'Actores',
+    kicker: 'Capítulo 07 · Identidad Territorial & Personajes',
+    title: 'Ranking Global de Actores, Personajes y Comunas',
+    subtitle:
+      'Directorio unificado de medios, municipios y autoridades con miniaturas e iconos representativos de cada territorio.',
+  },
+  {
+    id: 7,
     slug: 'resumen-comparativo',
     shortLabel: 'Resumen',
-    kicker: 'Capítulo 07 · Síntesis Final Integrada',
+    kicker: 'Capítulo 08 · Síntesis Final Integrada',
     title: 'Resumen Ejecutivo de Ambos Reportes',
     subtitle:
       'Comparativa consolidada entre el Ecosistema Regional de Medios (31 días) y el Benchmark de Cuentas Públicas (28 días).',
@@ -573,7 +582,7 @@ export const EXECUTIVE_DUAL_SUMMARY: ExecutiveReportSummaryCard[] = [
     id: 'benchmark',
     badge: 'REPORTE 02 · BENCHMARK 3D',
     title: 'Municipios y Liderazgos Públicos',
-    period: 'Últimos 28 días · 7 capítulos',
+    period: 'Últimos 28 días · 8 capítulos',
     accent: '#FF2E93',
     stats: [
       { label: 'Cuentas Públicas', value: '26 cuentas' },

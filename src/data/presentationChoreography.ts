@@ -256,7 +256,7 @@ export const PRESENTATION_CHOREOGRAPHY: Record<string, ChoreographyCue[]> = {
   ],
 
   // =========================================================
-  // REPORTE 2: BENCHMARK 3D · 28 DÍAS (7 CAPÍTULOS)
+  // REPORTE 2: BENCHMARK 3D · 28 DÍAS (8 CAPÍTULOS)
   // =========================================================
   'benchmark-0': [
     {
@@ -402,7 +402,41 @@ export const PRESENTATION_CHOREOGRAPHY: Record<string, ChoreographyCue[]> = {
   'benchmark-6': [
     {
       atProgress: 0,
+      focusBadge: 'Anfiteatro Regional · 18 Actores e Iconos',
+      highlightRank: null,
+      camera: { position: [2.6, 5.7, 13.8], target: [2.1, 2.3, 0] },
+    },
+    {
+      atProgress: 0.2,
+      focusBadge: '#1 Mi Radio · #2 Diario El Día (Medios)',
+      highlightRank: 1,
+      camera: { position: [-1.1, 4.9, 9.6], target: [-0.8, 2.65, -0.6] },
+    },
+    {
+      atProgress: 0.45,
+      focusBadge: '#7 Muni Coquimbo · #6 Muni La Serena',
+      highlightRank: 7,
+      camera: { position: [3.2, 4.8, 8.8], target: [3.1, 2.55, -1.8] },
+    },
+    {
+      atProgress: 0.66,
+      focusBadge: '#8 Manouchehri · #9 Daniela Norambuena',
+      highlightRank: 8,
+      camera: { position: [5.0, 4.7, 8.6], target: [4.6, 2.45, -0.8] },
+    },
+    {
+      atProgress: 0.84,
+      focusBadge: 'Limarí · Elqui · Choapa (18 Actores)',
+      highlightRank: 13,
+      camera: { position: [2.6, 5.4, 11.8], target: [2.3, 2.2, 0.8] },
+    },
+  ],
+
+  'benchmark-7': [
+    {
+      atProgress: 0,
       focusBadge: 'Síntesis Comparativa · Ambos Reportes',
+      highlightRank: null,
       camera: { position: [0, 5.1, 11.8], target: [0, 2.45, 0] },
     },
     {

@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowRight, Cpu, Home, Play, Sparkles } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ArrowRight, Cpu, Home, Play, Search, Sparkles } from 'lucide-react';
 import {
   BENCHMARK_CHAPTERS,
   BENCHMARK_FOLLOWERS_TOP,
@@ -12,7 +12,12 @@ import {
   CONURBANO_DUEL_DATA,
   EXECUTIVE_DUAL_SUMMARY,
 } from '../data/benchmarkData';
+import {
+  GLOBAL_ACTORS_RANKING,
+  GlobalActorCategory,
+} from '../data/globalActorsData';
 import { ConurbanoDuelMode } from '../three/benchmarkBuilders';
+import { ActorEmblem } from './ActorEmblem';
 
 interface BenchmarkOverlaysProps {
   activeChapter: number;
@@ -33,6 +38,23 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
   hudCollapsed,
   onNavigateReportStart,
 }) => {
+  const [actorFilter, setActorFilter] = useState<'all' | GlobalActorCategory>('all');
+  const [actorQuery, setActorQuery] = useState('');
+
+  const filteredActors = useMemo(() => {
+    const q = actorQuery.trim().toLowerCase();
+    return GLOBAL_ACTORS_RANKING.filter((a) => {
+      if (actorFilter !== 'all' && a.category !== actorFilter) return false;
+      if (!q) return true;
+      return (
+        a.name.toLowerCase().includes(q) ||
+        a.handle.toLowerCase().includes(q) ||
+        a.territory.toLowerCase().includes(q) ||
+        a.categoryLabel.toLowerCase().includes(q)
+      );
+    });
+  }, [actorFilter, actorQuery]);
+
   if (hudCollapsed) return null;
 
   const meta = BENCHMARK_CHAPTERS[activeChapter] ?? BENCHMARK_CHAPTERS[0];
@@ -97,8 +119,25 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
           </div>
         )}
 
-        {/* Chapter 6 Desktop Unified Callout & Full Keynote Replay */}
-        {activeChapter === 6 && onNavigateReportStart && (
+        {/* Chapter 6 Desktop Top-right Territorial Landmark Key */}
+        {activeChapter === 6 && (
+          <div className="dark-glass-panel pointer-events-auto hidden rounded-2xl px-4 py-3 text-right lg:block">
+            <div className="text-[11px] font-medium text-slate-400">
+              Anfiteatro 3D · Hitos Comunales
+            </div>
+            <div className="font-mono-tabular mt-0.5 text-sm font-bold text-[#00F0FF]">
+              18 Actores · Retratos &amp; Símbolos
+            </div>
+            <div className="mt-1 flex items-center justify-end gap-2 text-[11px] text-slate-300">
+              <span className="text-[#00F0FF]">● Medios</span>
+              <span className="text-[#10B981]">● Municipios</span>
+              <span className="text-[#FF2E93]">● Personajes</span>
+            </div>
+          </div>
+        )}
+
+        {/* Chapter 7 (Capítulo 08) Desktop Unified Callout & Full Keynote Replay */}
+        {activeChapter === 7 && onNavigateReportStart && (
           <div
             data-html2canvas-ignore="true"
             className="dark-glass-panel pointer-events-auto hidden items-center gap-3 rounded-2xl px-4 py-3 lg:flex"
@@ -469,8 +508,128 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
           </div>
         )}
 
-        {/* CHAPTER 6 (CAPÍTULO 07): RESUMEN EJECUTIVO DE AMBOS REPORTES */}
+        {/* CHAPTER 6 (CAPÍTULO 07): RANKING GLOBAL DE ACTORES CON MINIATURAS E ICONOS */}
         {activeChapter === 6 && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <div className="dark-glass-panel pointer-events-auto rounded-2xl p-4 lg:col-span-6 xl:col-span-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                <div>
+                  <h2 className="font-display text-sm font-semibold text-white">
+                    Directorio Regional ({filteredActors.length} actores)
+                  </h2>
+                  <p className="text-[11px] text-slate-400">
+                    Pasa el cursor o toca un perfil para iluminarlo en el anfiteatro 3D
+                  </p>
+                </div>
+                <div className="relative w-full sm:w-44">
+                  <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={actorQuery}
+                    onChange={(e) => setActorQuery(e.target.value)}
+                    placeholder="Buscar comuna o actor..."
+                    className="w-full rounded-lg border border-white/15 bg-white/[0.05] py-1.5 pr-2.5 pl-8 text-xs text-white placeholder:text-slate-500 focus:border-[#00F0FF] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {(
+                  [
+                    { id: 'all', label: 'Todos (18)' },
+                    { id: 'medio', label: 'Medios (6)' },
+                    { id: 'municipio', label: 'Municipios (7)' },
+                    { id: 'personaje', label: 'Personajes (5)' },
+                  ] as const
+                ).map((tab) => {
+                  const active = actorFilter === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActorFilter(tab.id)}
+                      className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                        active
+                          ? 'bg-[#00F0FF] text-[#060B19]'
+                          : 'border border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="editorial-scroll mt-2.5 space-y-2 lg:max-h-[290px] lg:overflow-y-auto lg:pr-1">
+                {filteredActors.map((actor) => {
+                  const isHighlighted = highlightedRank === actor.rank;
+                  return (
+                    <div
+                      key={actor.handle}
+                      onMouseEnter={() => onHoverRank(actor.rank)}
+                      onMouseLeave={() => onHoverRank(null)}
+                      onClick={() => onHoverRank(isHighlighted ? null : actor.rank)}
+                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 transition-all ${
+                        isHighlighted
+                          ? 'border-[#00F0FF]/60 bg-[#00F0FF]/14 shadow-lg'
+                          : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07]'
+                      }`}
+                    >
+                      <ActorEmblem
+                        kind={actor.emblemKind}
+                        color={actor.color}
+                        size={40}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <span
+                              className="font-mono-tabular shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-[#060B19]"
+                              style={{ backgroundColor: actor.color }}
+                            >
+                              #{String(actor.rank).padStart(2, '0')}
+                            </span>
+                            <span className="truncate font-display text-xs font-bold text-white">
+                              {actor.name}
+                            </span>
+                          </div>
+                          <span
+                            className="font-mono-tabular shrink-0 text-xs font-bold"
+                            style={{ color: actor.color }}
+                          >
+                            {actor.primaryMetricLabel}
+                          </span>
+                        </div>
+
+                        <div className="mt-0.5 flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                          <span className="truncate text-slate-400">
+                            {actor.handle} ·{' '}
+                            <span className="text-slate-300">{actor.territory}</span>
+                          </span>
+                          <span className="font-mono-tabular shrink-0 font-semibold text-slate-200">
+                            {actor.erLabel}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-[10px] text-slate-400">
+                          {actor.highlightNote}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {filteredActors.length === 0 && (
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-5 text-center text-xs text-slate-400">
+                    Sin coincidencias para &ldquo;{actorQuery}&rdquo;.
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="hidden lg:col-span-6 xl:col-span-7" />
+          </div>
+        )}
+
+        {/* CHAPTER 7 (CAPÍTULO 08): RESUMEN EJECUTIVO DE AMBOS REPORTES */}
+        {activeChapter === 7 && (
           <div className="pointer-events-auto space-y-3">
             <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
               {EXECUTIVE_DUAL_SUMMARY.map((rep) => {
