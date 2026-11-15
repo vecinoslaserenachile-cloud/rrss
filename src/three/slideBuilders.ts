@@ -201,7 +201,7 @@ function createCompositeCylinderBar(options: {
 }
 
 /**
- * SLIDE 0: Portada 3D — Escultura de datos orbital + espiras de métricas
+ * SLIDE 0: Portada 3D — Escultura de datos orbital + Top 10 Actores por Segmento + 6 Temas Motores
  */
 export function buildSlide0Hero(): BuiltSlideScene {
   const group = new THREE.Group();
@@ -209,14 +209,14 @@ export function buildSlide0Hero(): BuiltSlideScene {
   const gyroRings: THREE.Mesh[] = [];
   const floatingNodes: { obj: THREE.Object3D; baseY: number; phase: number; speed: number }[] = [];
 
-  // Offset right slightly so left editorial title & KPIs breathe
+  // Offset slightly right so left editorial title & KPIs breathe
   const sculpture = new THREE.Group();
-  sculpture.position.set(2.3, 0, 0);
+  sculpture.position.set(2.05, 0, 0);
   group.add(sculpture);
 
-  // Ground architectural base disc (3 parts)
+  // Ground architectural base disc
   const plinthOuter = new THREE.Mesh(
-    new THREE.CylinderGeometry(3.4, 3.6, 0.14, 64),
+    new THREE.CylinderGeometry(3.55, 3.75, 0.14, 64),
     new THREE.MeshStandardMaterial({ color: '#E2E8F0', roughness: 0.55, metalness: 0.25 })
   );
   plinthOuter.position.y = 0.07;
@@ -224,15 +224,15 @@ export function buildSlide0Hero(): BuiltSlideScene {
   sculpture.add(plinthOuter);
 
   const plinthInner = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.65, 2.75, 0.18, 64),
+    new THREE.CylinderGeometry(2.7, 2.8, 0.18, 64),
     new THREE.MeshStandardMaterial({ color: '#0F172A', roughness: 0.35, metalness: 0.45 })
   );
   plinthInner.position.y = 0.15;
   plinthInner.receiveShadow = true;
   sculpture.add(plinthInner);
 
-  // Central glass-like optical sphere core
-  const coreGeo = new THREE.IcosahedronGeometry(0.85, 3);
+  // Central glass-like optical sphere core -> Ecosistema Regional
+  const coreGeo = new THREE.IcosahedronGeometry(0.84, 3);
   const coreMat = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color('#0284C7'),
     roughness: 0.12,
@@ -249,19 +249,46 @@ export function buildSlide0Hero(): BuiltSlideScene {
     core,
     hoverables,
     {
-      title: 'Ecosistema Regional Coquimbo',
-      metric: '3,13M Me gusta',
+      title: 'Núcleo · Ecosistema Regional Coquimbo',
+      metric: '3.132.700 Me gusta',
       subtitle: '20 cuentas monitoreadas · 14 oct – 14 nov 2026',
       color: '#0284C7',
     },
     core
   );
 
-  // 3 Concentric Orbital Rings (Cyan, Coral, Emerald)
+  // 3 Concentric Orbital Rings with clear metric meaning
   const ringConfigs = [
-    { radius: 1.65, tube: 0.065, color: '#0284C7', tiltX: 0.9, tiltZ: 0.3, label: '3,13M Likes Totales', sub: 'Volumen acumulado en 31 días' },
-    { radius: 2.15, tube: 0.055, color: '#F97316', tiltX: -0.7, tiltZ: 0.8, label: '1,06% Engagement Medio', sub: 'Tasa promedio sobre seguidores' },
-    { radius: 2.65, tube: 0.048, color: '#10B981', tiltX: 0.4, tiltZ: -0.9, label: '6,0 Posts / Día', sub: 'Ritmo medio por cuenta activa' },
+    {
+      radius: 1.62,
+      tube: 0.065,
+      color: '#0284C7',
+      tiltX: 0.9,
+      tiltZ: 0.3,
+      label: 'Órbita de Volumen · Me Gusta Totales',
+      metric: '3,13M',
+      sub: 'Reacciones acumuladas en 31 días de monitoreo',
+    },
+    {
+      radius: 2.1,
+      tube: 0.055,
+      color: '#F97316',
+      tiltX: -0.7,
+      tiltZ: 0.8,
+      label: 'Órbita de Intensidad · Engagement Medio',
+      metric: '1,06%',
+      sub: 'Tasa promedio regional sobre base de seguidores',
+    },
+    {
+      radius: 2.58,
+      tube: 0.048,
+      color: '#10B981',
+      tiltX: 0.4,
+      tiltZ: -0.9,
+      label: 'Órbita de Cadencia · Frecuencia Diaria',
+      metric: '6,0 posts/día',
+      sub: 'Ritmo promedio de publicación por cuenta activa',
+    },
   ];
 
   ringConfigs.forEach((cfg) => {
@@ -279,7 +306,7 @@ export function buildSlide0Hero(): BuiltSlideScene {
       hoverables,
       {
         title: cfg.label,
-        metric: cfg.color === '#0284C7' ? '3,13M' : cfg.color === '#F97316' ? '1,06%' : '6,0/día',
+        metric: cfg.metric,
         subtitle: cfg.sub,
         color: cfg.color,
       },
@@ -287,55 +314,94 @@ export function buildSlide0Hero(): BuiltSlideScene {
     );
   });
 
-  // 12 Radial cylindrical spires around perimeter
-  const spireHeights = [1.8, 1.35, 0.95, 1.55, 2.2, 1.15, 0.85, 1.7, 1.25, 0.9, 1.45, 2.05];
-  const avgSpireVal =
-    spireHeights.reduce((acc, h) => acc + Math.round(h * 145), 0) / spireHeights.length;
-  const spireColors = ['#0284C7', '#0F172A', '#10B981', '#F97316'];
-  spireHeights.forEach((h, i) => {
-    const angle = (i / spireHeights.length) * Math.PI * 2;
-    const r = 3.0;
+  // Top 10 real accounts around the perimeter, color-coded by ecosystem segment
+  const top10Hero = TOP_20_LIKES.slice(0, 10);
+  const maxHeroLikes = top10Hero[0].likes;
+  const avgHeroLikes = top10Hero.reduce((sum, a) => sum + a.likes, 0) / top10Hero.length;
+
+  const getSegmentAppearance = (acc: (typeof TOP_20_LIKES)[number]) => {
+    if (acc.name === 'Papaya TV' || acc.name === 'RSB Chile') {
+      return { color: '#F97316', role: 'Alto Engagement / Viralidad' };
+    }
+    if (acc.category === 'Medio Informativo') {
+      return { color: '#0284C7', role: 'Medio Informativo' };
+    }
+    if (acc.category === 'Comunidad / Viral') {
+      return { color: '#10B981', role: 'Comunidad Local' };
+    }
+    return { color: '#0F172A', role: 'Institucional / Figura' };
+  };
+
+  top10Hero.forEach((acc, i) => {
+    // Arrange tallest leaders along the rear arc and smaller leaders in front
+    const angle = -Math.PI * 0.78 + (i / top10Hero.length) * Math.PI * 2;
+    const r = 3.12;
     const x = Math.cos(angle) * r;
     const z = Math.sin(angle) * r;
-    const col = spireColors[i % spireColors.length];
-    const valK = Math.round(h * 145);
+    const { color, role } = getSegmentAppearance(acc);
+    const scaledH = 0.55 + Math.sqrt(acc.likes / maxHeroLikes) * 2.15;
+
     const { barGroup } = createCompositeCylinderBar({
-      radius: 0.16,
-      height: h,
-      color: col,
+      radius: 0.19,
+      height: scaledH,
+      color,
       position: [x, 0.14, z],
       payload: {
-        title: `Nodo de Conversación #${i + 1}`,
-        metric: `${valK}k interacciones`,
-        subtitle: 'Actividad radial del ecosistema Coquimbo',
-        color: col,
-        variancePct: calcVariancePct(valK, avgSpireVal),
-        averageLabel: `${Math.round(avgSpireVal)}k prom.`,
+        title: `#${acc.rank} · ${acc.name}`,
+        metric: `${formatSpanishInt(acc.likes)} Me gusta`,
+        subtitle: `${role} · ${acc.shareOfLikes.toFixed(1).replace('.', ',')}% del ecosistema`,
+        color,
+        rank: acc.rank,
+        variancePct: calcVariancePct(acc.likes, avgHeroLikes),
+        averageLabel: '298,4k prom. Top 10',
       },
       hoverables,
+      permanentLabel: {
+        name: `${acc.rank}. ${acc.name}`,
+        pctLabel: `${acc.shareOfLikes.toFixed(1).replace('.', ',')}%`,
+        scale: 0.66,
+      },
     });
     sculpture.add(barGroup);
   });
 
-  // Floating spherical data nodes
-  for (let i = 0; i < 6; i++) {
-    const ang = (i / 6) * Math.PI * 2;
+  // 6 Floating orbital nodes tied directly to the 6 top Conversation Hashtags
+  const avgTagPct =
+    HASHTAGS_DATA.reduce((sum, h) => sum + h.interactionPct, 0) / HASHTAGS_DATA.length;
+
+  HASHTAGS_DATA.forEach((tag, i) => {
+    const ang = (i / HASHTAGS_DATA.length) * Math.PI * 2 + 0.35;
+    const nodeRadius = 0.13 + (tag.interactionPct / 45) * 0.08;
     const node = new THREE.Mesh(
-      new THREE.SphereGeometry(0.14, 24, 24),
-      makeBarMaterial(i % 2 === 0 ? '#F97316' : '#10B981', 0.18, 0.4)
+      new THREE.SphereGeometry(nodeRadius, 24, 24),
+      makeBarMaterial(tag.color, 0.18, 0.4)
     );
-    const yBase = 1.6 + (i % 3) * 0.75;
-    node.position.set(Math.cos(ang) * 2.35, yBase, Math.sin(ang) * 2.35);
+    const yBase = 1.65 + (i % 3) * 0.72;
+    node.position.set(Math.cos(ang) * 2.38, yBase, Math.sin(ang) * 2.38);
     node.castShadow = true;
     sculpture.add(node);
     floatingNodes.push({ obj: node, baseY: yBase, phase: i * 1.1, speed: 1.4 });
-  }
+
+    registerHoverable(
+      node,
+      hoverables,
+      {
+        title: `Tema Motor · ${tag.tag}`,
+        metric: `${tag.interactionPct}% interacción`,
+        subtitle: tag.topic,
+        color: tag.color,
+        variancePct: calcVariancePct(tag.interactionPct, avgTagPct),
+        averageLabel: '22,7% prom.',
+      },
+      node
+    );
+  });
 
   return {
     group,
     hoverables,
     animatedObjects: { gyroRings, floatingNodes },
-    cameraPreset: { position: [0.5, 4.1, 10.6], target: [0.8, 1.9, 0] },
+    cameraPreset: { position: [0.55, 4.45, 11.4], target: [1.05, 2.2, 0] },
   };
 }
 

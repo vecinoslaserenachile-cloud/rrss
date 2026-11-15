@@ -244,11 +244,71 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
             </div>
 
             <div className="hidden md:col-span-7 lg:col-span-8 md:flex items-end justify-end">
-              <div
-                data-html2canvas-ignore="true"
-                className="glass-panel pointer-events-auto max-w-xs rounded-2xl px-4 py-3 text-xs text-slate-600"
-              >
-                Mueve el cursor sobre la escultura 3D para explorar los anillos y nodos de conversación regional.
+              <div className="glass-panel pointer-events-auto w-full max-w-sm rounded-2xl p-4 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-900/10 pb-2">
+                  <span className="font-display font-semibold text-[#0F172A]">
+                    Simbología de la Escultura 3D
+                  </span>
+                  <span className="text-[11px] font-medium text-[#0284C7]">
+                    Lectura visual
+                  </span>
+                </div>
+
+                {/* Orbital Rings Key */}
+                <div className="mt-2.5 grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="rounded-lg bg-white/80 px-2 py-1.5 border border-slate-900/6">
+                    <div className="flex items-center gap-1.5 font-semibold text-[#0F172A]">
+                      <span className="h-2 w-2 rounded-full bg-[#0284C7]" />
+                      Órbita Cian
+                    </div>
+                    <div className="mt-0.5 text-slate-500">Volumen (3,13M)</div>
+                  </div>
+                  <div className="rounded-lg bg-white/80 px-2 py-1.5 border border-slate-900/6">
+                    <div className="flex items-center gap-1.5 font-semibold text-[#0F172A]">
+                      <span className="h-2 w-2 rounded-full bg-[#F97316]" />
+                      Órbita Coral
+                    </div>
+                    <div className="mt-0.5 text-slate-500">Engagement (1,06%)</div>
+                  </div>
+                  <div className="rounded-lg bg-white/80 px-2 py-1.5 border border-slate-900/6">
+                    <div className="flex items-center gap-1.5 font-semibold text-[#0F172A]">
+                      <span className="h-2 w-2 rounded-full bg-[#10B981]" />
+                      Órbita Verde
+                    </div>
+                    <div className="mt-0.5 text-slate-500">Cadencia (6,0/día)</div>
+                  </div>
+                </div>
+
+                {/* Perimeter Pillars Key */}
+                <div className="mt-3 border-t border-slate-900/8 pt-2.5">
+                  <div className="text-[11px] font-semibold text-slate-600">
+                    10 Pilares Perimetrales · Top 10 Cuentas (% de Me gusta)
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-600">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#0284C7]" />
+                      <span>Medios Informativos</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#10B981]" />
+                      <span>Comunidad Local</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#F97316]" />
+                      <span>Alto Engagement</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#0F172A]" />
+                      <span>Institucional / Figuras</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating Spheres Key */}
+                <div className="mt-2.5 border-t border-slate-900/8 pt-2 text-[11px] text-slate-500">
+                  <span className="font-semibold text-[#0F172A]">6 Esferas orbitales:</span>{' '}
+                  Hashtags tractores del período (<span className="font-mono-tabular text-[#F97316]">#afp</span>, <span className="font-mono-tabular text-[#0284C7]">#tocopilla</span>, <span className="font-mono-tabular text-[#10B981]">#lapaloma</span>).
+                </div>
               </div>
             </div>
           </div>
