@@ -1,0 +1,6 @@
+{
+  "name": "Coquimbo Digital 2026",
+  "description": "Presentación ejecutiva 3D interactiva sobre el Ecosistema Digital de Instagram en la Región de Coquimbo (14 de octubre al 14 de noviembre de 2026).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
