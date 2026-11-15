@@ -104,27 +104,27 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
   }
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-20 flex flex-col justify-between px-6 pt-20 pb-24 lg:px-10">
+    <div className="pointer-events-none fixed inset-0 z-20 flex flex-col pt-16 pb-[4.5rem] lg:justify-between lg:px-10 lg:pt-20 lg:pb-24">
       {/* Top Editorial Header for Active Slide */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-4 px-4 lg:px-0">
         <div className="pointer-events-auto max-w-xl">
-          <p className="text-xs font-medium tracking-wide text-[#0284C7]">
+          <p className="text-[11px] font-medium tracking-wide text-[#0284C7] sm:text-xs">
             {slideMeta.kicker}
           </p>
           <h1
-            className="font-display mt-1 text-2xl font-bold tracking-tight text-[#0F172A] sm:text-3xl lg:text-[2.15rem] lg:leading-[1.12]"
+            className="font-display mt-0.5 text-xl font-bold tracking-tight text-[#0F172A] sm:text-2xl lg:mt-1 lg:text-[2.15rem] lg:leading-[1.12]"
             style={{ textWrap: 'balance' }}
           >
             {slideMeta.title}
           </h1>
-          <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-slate-600">
+          <p className="mt-1 line-clamp-2 max-w-lg text-xs leading-relaxed text-slate-600 sm:text-sm lg:mt-1.5 lg:line-clamp-none">
             {slideMeta.subtitle}
           </p>
         </div>
 
-        {/* Slide 0 Top Right Quick Summary Badge */}
+        {/* Desktop Top-Right Callout Badges (shown inside mobile sheet on <lg) */}
         {activeSlide === 0 && (
-          <div className="glass-panel pointer-events-auto rounded-2xl px-5 py-3.5 text-right">
+          <div className="glass-panel pointer-events-auto hidden rounded-2xl px-5 py-3.5 text-right lg:block">
             <div className="text-xs font-medium text-slate-500">
               Cobertura del Estudio
             </div>
@@ -137,9 +137,8 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
           </div>
         )}
 
-        {/* Slide-specific Top Right Compact Callout where helpful */}
         {activeSlide === 2 && (
-          <div className="glass-panel pointer-events-auto rounded-2xl px-5 py-3.5">
+          <div className="glass-panel pointer-events-auto hidden rounded-2xl px-5 py-3.5 lg:block">
             <div className="text-xs font-medium text-slate-500">
               Crecimiento neto promedio
             </div>
@@ -153,7 +152,7 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
         )}
 
         {activeSlide === 3 && (
-          <div className="glass-panel pointer-events-auto rounded-2xl px-5 py-3.5 text-right">
+          <div className="glass-panel pointer-events-auto hidden rounded-2xl px-5 py-3.5 text-right lg:block">
             <div className="text-xs font-medium text-slate-500">
               Suma auditada Top 20
             </div>
@@ -167,7 +166,7 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
         )}
 
         {activeSlide === 7 && (
-          <div className="pointer-events-auto flex flex-wrap items-center gap-3">
+          <div className="pointer-events-auto hidden flex-wrap items-center gap-3 lg:flex">
             <div className="glass-panel rounded-2xl px-4 py-3 text-right">
               <div className="text-xs font-medium text-slate-500">
                 Me gusta 22 actores
@@ -194,7 +193,7 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
         )}
 
         {activeSlide === 8 && (
-          <div className="pointer-events-auto flex flex-wrap items-center gap-3">
+          <div className="pointer-events-auto hidden flex-wrap items-center gap-3 lg:flex">
             <div className="glass-panel rounded-2xl px-4 py-3 text-right">
               <div className="text-xs font-medium text-slate-500">
                 Total Me Gusta Analizados
@@ -221,8 +220,74 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
         )}
       </div>
 
-      {/* Slide Content Bento Layouts */}
-      <div className="mt-auto">
+      {/* Unobstructed 3D Viewport Showcase Window on Mobile Portrait */}
+      <div className="h-[32vh] min-h-[185px] max-h-[290px] shrink-0 pointer-events-none lg:hidden" />
+
+      {/* Slide Content Bento Layouts (Native Scrollable Sheet on <lg, Bottom Floating on lg+) */}
+      <div className="editorial-scroll pointer-events-auto min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-2 pb-8 lg:mt-auto lg:flex-none lg:overflow-visible lg:px-0 lg:pt-0 lg:pb-0 lg:pointer-events-none">
+        <div
+          data-html2canvas-ignore="true"
+          className="mb-2.5 flex items-center justify-center gap-2 lg:hidden"
+        >
+          <span className="h-1 w-9 rounded-full bg-slate-400/50" />
+          <span className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">
+            Datos del informe · Desliza
+          </span>
+        </div>
+        {/* Mobile Inline Summary Badges for slides that use top-right desktop badges */}
+        {activeSlide === 0 && (
+          <div className="glass-panel mb-3 flex items-center justify-between rounded-xl px-3.5 py-2.5 lg:hidden">
+            <div>
+              <div className="text-[11px] font-medium text-slate-500">Cobertura del Estudio</div>
+              <div className="text-[11px] text-slate-500">31 días · 6,0 posts/día por cta</div>
+            </div>
+            <div className="font-mono-tabular text-lg font-bold text-[#0284C7]">
+              20 perfiles
+            </div>
+          </div>
+        )}
+        {activeSlide === 2 && (
+          <div className="glass-panel mb-3 flex items-center justify-between rounded-xl px-3.5 py-2.5 lg:hidden">
+            <div className="text-[11px] font-medium text-slate-600">
+              Crecimiento neto promedio · Oct–Nov
+            </div>
+            <div className="font-mono-tabular text-base font-bold text-[#10B981]">
+              +2,63%
+            </div>
+          </div>
+        )}
+        {activeSlide === 3 && (
+          <div className="glass-panel mb-3 flex items-center justify-between rounded-xl px-3.5 py-2.5 lg:hidden">
+            <div className="text-[11px] font-medium text-slate-600">Suma auditada Top 20</div>
+            <div className="font-mono-tabular text-base font-bold text-[#0F172A]">
+              3.132.700 likes
+            </div>
+          </div>
+        )}
+        {activeSlide === 7 && (
+          <div className="mb-3 grid grid-cols-2 gap-2.5 lg:hidden">
+            <div className="glass-panel rounded-xl px-3 py-2.5">
+              <div className="text-[11px] text-slate-500">22 actores</div>
+              <div className="font-mono-tabular text-base font-bold text-[#0284C7]">3.107.800</div>
+            </div>
+            <div className="glass-panel rounded-xl px-3 py-2.5">
+              <div className="text-[11px] text-slate-500">Top 3 concentración</div>
+              <div className="font-mono-tabular text-base font-bold text-[#10B981]">72,7%</div>
+            </div>
+          </div>
+        )}
+        {activeSlide === 8 && (
+          <div className="mb-3 grid grid-cols-2 gap-2.5 lg:hidden">
+            <div className="glass-panel rounded-xl px-3 py-2.5">
+              <div className="text-[11px] text-slate-500">Total Analizado</div>
+              <div className="font-mono-tabular text-base font-bold text-[#0F172A]">3.107.800</div>
+            </div>
+            <div className="glass-panel rounded-xl px-3 py-2.5">
+              <div className="text-[11px] text-slate-500">Cuota Top 6</div>
+              <div className="font-mono-tabular text-base font-bold text-[#0284C7]">90,3%</div>
+            </div>
+          </div>
+        )}
         {/* SLIDE 0: DASHBOARD DE RESUMEN EJECUTIVO */}
         {activeSlide === 0 && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -425,7 +490,7 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
         {/* SLIDE 3: RANKING TOP 20 ME GUSTA (TABLA INTERACTIVA CON FILTROS) */}
         {activeSlide === 3 && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <div className="glass-panel pointer-events-auto flex max-h-[56vh] flex-col rounded-2xl p-4 lg:col-span-6 xl:col-span-5">
+            <div className="glass-panel pointer-events-auto flex max-h-[46vh] flex-col rounded-2xl p-4 lg:col-span-6 lg:max-h-[56vh] xl:col-span-5">
               {/* Filter & Search Toolbar */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-900/10 pb-3">
                 <div className="relative min-w-[170px] flex-1">
@@ -754,7 +819,7 @@ export const SlideOverlays: React.FC<SlideOverlaysProps> = ({
         {/* SLIDE 7: ME GUSTA DEL PERÍODO POR ACTOR (22 CUENTAS) */}
         {activeSlide === 7 && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <div className="glass-panel pointer-events-auto flex max-h-[56vh] flex-col rounded-2xl p-4 lg:col-span-6 xl:col-span-5">
+            <div className="glass-panel pointer-events-auto flex max-h-[46vh] flex-col rounded-2xl p-4 lg:col-span-6 lg:max-h-[56vh] xl:col-span-5">
               {/* Search + Segmented Tier Filter */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-900/10 pb-3">
                 <div className="relative min-w-[160px] flex-1">

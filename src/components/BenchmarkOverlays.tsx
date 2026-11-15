@@ -34,27 +34,27 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
   const meta = BENCHMARK_CHAPTERS[activeChapter];
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-20 flex flex-col justify-between px-6 pt-20 pb-24 lg:px-10">
+    <div className="pointer-events-none fixed inset-0 z-20 flex flex-col pt-16 pb-[4.5rem] lg:justify-between lg:px-10 lg:pt-20 lg:pb-24">
       {/* Chapter Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-4 px-4 lg:px-0">
         <div className="pointer-events-auto max-w-xl">
-          <p className="font-mono-tabular text-xs font-semibold tracking-wider text-[#00F0FF] uppercase">
+          <p className="font-mono-tabular text-[11px] font-semibold tracking-wider text-[#00F0FF] uppercase sm:text-xs">
             {meta.kicker}
           </p>
           <h1
-            className="font-display mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-[2.15rem] lg:leading-[1.12]"
+            className="font-display mt-0.5 text-xl font-bold tracking-tight text-white sm:text-2xl lg:mt-1 lg:text-[2.15rem] lg:leading-[1.12]"
             style={{ textWrap: 'balance' }}
           >
             {meta.title}
           </h1>
-          <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-slate-300">
+          <p className="mt-1 line-clamp-2 max-w-lg text-xs leading-relaxed text-slate-300 sm:text-sm lg:mt-1.5 lg:line-clamp-none">
             {meta.subtitle}
           </p>
         </div>
 
-        {/* Chapter 2 Interactive Toggle: Métricas Totales vs Ratios de Eficiencia */}
+        {/* Chapter 2 Desktop Interactive Toggle */}
         {activeChapter === 2 && (
-          <div className="dark-glass-panel pointer-events-auto flex items-center gap-1 rounded-xl p-1.5">
+          <div className="dark-glass-panel pointer-events-auto hidden items-center gap-1 rounded-xl p-1.5 lg:flex">
             <button
               type="button"
               onClick={() => onDuelModeChange('totals')}
@@ -80,9 +80,9 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
           </div>
         )}
 
-        {/* Chapter 1 Top-right summary pill */}
+        {/* Chapter 1 Desktop Top-right summary pill */}
         {activeChapter === 1 && (
-          <div className="dark-glass-panel pointer-events-auto rounded-2xl px-5 py-3.5 text-right">
+          <div className="dark-glass-panel pointer-events-auto hidden rounded-2xl px-5 py-3.5 text-right lg:block">
             <div className="text-xs font-medium text-slate-400">Insight Clave</div>
             <div className="font-mono-tabular mt-0.5 text-xl font-bold text-[#00F0FF]">
               50,1% del ecosistema
@@ -94,8 +94,57 @@ export const BenchmarkOverlays: React.FC<BenchmarkOverlaysProps> = ({
         )}
       </div>
 
-      {/* Bottom Bento Panels per Chapter */}
-      <div className="mt-auto">
+      {/* Unobstructed 3D Telemetry Showcase Window on Mobile Portrait */}
+      <div className="h-[32vh] min-h-[185px] max-h-[290px] shrink-0 pointer-events-none lg:hidden" />
+
+      {/* Bottom Bento Panels per Chapter (Scrollable Sheet on <lg, Floating Bento on lg+) */}
+      <div className="editorial-scroll pointer-events-auto min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-2 pb-8 lg:mt-auto lg:flex-none lg:overflow-visible lg:px-0 lg:pt-0 lg:pb-0 lg:pointer-events-none">
+        <div
+          data-html2canvas-ignore="true"
+          className="mb-2.5 flex items-center justify-center gap-2 lg:hidden"
+        >
+          <span className="h-1 w-9 rounded-full bg-white/25" />
+          <span className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">
+            Telemetría · Desliza
+          </span>
+        </div>
+        {activeChapter === 1 && (
+          <div className="dark-glass-panel mb-3 flex items-center justify-between rounded-xl px-3.5 py-2.5 lg:hidden">
+            <span className="text-[11px] font-medium text-slate-300">
+              Insight: Top 5 acapara
+            </span>
+            <span className="font-mono-tabular text-sm font-bold text-[#00F0FF]">
+              50,1% del ecosistema
+            </span>
+          </div>
+        )}
+
+        {activeChapter === 2 && (
+          <div className="dark-glass-panel mb-3 grid grid-cols-2 gap-1.5 rounded-xl p-1.5 lg:hidden">
+            <button
+              type="button"
+              onClick={() => onDuelModeChange('totals')}
+              className={`rounded-lg px-2.5 py-2 text-xs font-semibold transition-all ${
+                duelMode === 'totals'
+                  ? 'bg-[#00F0FF] text-[#060B19] shadow-sm'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Métricas Totales
+            </button>
+            <button
+              type="button"
+              onClick={() => onDuelModeChange('efficiency')}
+              className={`rounded-lg px-2.5 py-2 text-xs font-semibold transition-all ${
+                duelMode === 'efficiency'
+                  ? 'bg-[#FF2E93] text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Eficiencia / Post
+            </button>
+          </div>
+        )}
         {/* CHAPTER 0: ECOSISTEMA REGIONAL (28 DÍAS) */}
         {activeChapter === 0 && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">

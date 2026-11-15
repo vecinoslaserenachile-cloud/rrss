@@ -24,6 +24,7 @@ interface Scene3DCanvasProps {
   resetCameraNonce: number;
   freeOrbitMode: boolean;
   autoPresent?: boolean;
+  hudCollapsed?: boolean;
   onHoverRank?: (rank: number | null) => void;
 }
 
@@ -44,8 +45,44 @@ const _targetLookAt = new THREE.Vector3();
 const _mouseNdc = new THREE.Vector2();
 const _tempColor = new THREE.Color();
 
+const _tempDelta = new THREE.Vector3();
+
+function applyPortraitFraming(
+  presetPos: [number, number, number],
+  presetTarget: [number, number, number],
+  outPos: THREE.Vector3,
+  outTarget: THREE.Vector3,
+  aspect: number,
+  hudVisible: boolean
+) {
+  outPos.set(...presetPos);
+  outTarget.set(...presetTarget);
+  if (aspect < 0.92) {
+    const zoom = Math.min(2.15, Math.max(1.22, 1.02 / Math.max(aspect, 0.42)));
+    _tempDelta.copy(outPos).sub(outTarget).multiplyScalar(zoom);
+    outTarget.x *= 0.25;
+    if (hudVisible) {
+      outTarget.y = Math.max(-0.4, outTarget.y - 1.25);
+    } else {
+      outTarget.y = Math.max(0.2, outTarget.y - 0.15);
+    }
+    outPos.copy(outTarget).add(_tempDelta);
+  }
+}
+
 export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
-  ({ activeSlide, highlightedRank, resetCameraNonce, freeOrbitMode, autoPresent = false, onHoverRank }, ref) => {
+  (
+    {
+      activeSlide,
+      highlightedRank,
+      resetCameraNonce,
+      freeOrbitMode,
+      autoPresent = false,
+      hudCollapsed = false,
+      onHoverRank,
+    },
+    ref
+  ) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [webglError, setWebglError] = useState(false);
@@ -55,6 +92,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
   const highlightedRankRef = useRef(highlightedRank);
   const freeOrbitRef = useRef(freeOrbitMode);
   const autoPresentRef = useRef(autoPresent);
+  const hudCollapsedRef = useRef(hudCollapsed);
   const onHoverRankRef = useRef(onHoverRank);
   const cameraTransitionActiveRef = useRef(true);
   const captureApiRef = useRef<Scene3DHandle | null>(null);
@@ -76,12 +114,13 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
   highlightedRankRef.current = highlightedRank;
   freeOrbitRef.current = freeOrbitMode;
   autoPresentRef.current = autoPresent;
+  hudCollapsedRef.current = hudCollapsed;
   onHoverRankRef.current = onHoverRank;
 
-  // Trigger smooth camera preset glide when slide changes or reset requested
+  // Trigger smooth camera preset glide when slide, HUD visibility, or reset changes
   useEffect(() => {
     cameraTransitionActiveRef.current = true;
-  }, [activeSlide, resetCameraNonce]);
+  }, [activeSlide, resetCameraNonce, hudCollapsed]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -164,7 +203,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
     controls.dampingFactor = 0.06;
     controls.enablePan = false;
     controls.minDistance = 4.5;
-    controls.maxDistance = 18;
+    controls.maxDistance = 32;
     controls.minPolarAngle = 0.25;
     controls.maxPolarAngle = Math.PI / 2 - 0.04;
     controls.target.set(0.8, 1.9, 0);
@@ -375,6 +414,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
     };
 
     canvas.addEventListener('pointermove', handlePointerMove);
+    canvas.addEventListener('pointerdown', handlePointerMove);
     canvas.addEventListener('pointerleave', handlePointerLeave);
 
     // Resize listener
@@ -385,6 +425,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      cameraTransitionActiveRef.current = true;
     };
     window.addEventListener('resize', handleResize);
 
@@ -530,10 +571,16 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
           });
         }
 
-        // Smooth camera preset transition
+        // Smooth camera preset transition (portrait-aware for vertical mobile)
         if (cameraTransitionActiveRef.current) {
-          _targetCamPos.set(...activeScene.cameraPreset.position);
-          _targetLookAt.set(...activeScene.cameraPreset.target);
+          applyPortraitFraming(
+            activeScene.cameraPreset.position,
+            activeScene.cameraPreset.target,
+            _targetCamPos,
+            _targetLookAt,
+            camera.aspect,
+            !hudCollapsedRef.current
+          );
 
           camera.position.x = THREE.MathUtils.damp(camera.position.x, _targetCamPos.x, 4.5, delta);
           camera.position.y = THREE.MathUtils.damp(camera.position.y, _targetCamPos.y, 4.5, delta);
@@ -578,6 +625,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
       clearTimeout(frameId);
       window.removeEventListener('resize', handleResize);
       canvas.removeEventListener('pointermove', handlePointerMove);
+      canvas.removeEventListener('pointerdown', handlePointerMove);
       canvas.removeEventListener('pointerleave', handlePointerLeave);
       canvas.removeEventListener('webglcontextlost', handleContextLost);
       canvas.removeEventListener('webglcontextrestored', handleContextRestored);
@@ -605,9 +653,14 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
     };
   }, []);
 
-  // Clamp tooltip position inside viewport
-  const tooltipLeft = tooltip ? Math.min(tooltip.x + 16, window.innerWidth - 300) : 0;
-  const tooltipTop = tooltip ? Math.max(16, Math.min(tooltip.y - 16, window.innerHeight - 195)) : 0;
+  // Clamp tooltip position inside viewport (including narrow mobile screens)
+  const tooltipW = typeof window !== 'undefined' ? Math.min(288, window.innerWidth - 24) : 288;
+  const tooltipLeft = tooltip
+    ? Math.max(12, Math.min(tooltip.x + 12, window.innerWidth - tooltipW - 12))
+    : 0;
+  const tooltipTop = tooltip
+    ? Math.max(64, Math.min(tooltip.y - 16, window.innerHeight - 210))
+    : 0;
 
   const hasVariance =
     tooltip?.payload.variancePct !== undefined && Number.isFinite(tooltip.payload.variancePct);
@@ -643,10 +696,10 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
         </div>
       )}
 
-      {/* Dynamic 3D Hover Tooltip */}
+      {/* Dynamic 3D Hover / Tap Tooltip */}
       {tooltip && (
         <div
-          className="pointer-events-none fixed z-50 w-72 rounded-xl border border-slate-900/10 bg-white/96 p-3.5 shadow-xl transition-transform duration-100"
+          className="pointer-events-none fixed z-50 w-[min(18rem,calc(100vw-1.5rem))] rounded-xl border border-slate-900/10 bg-white/96 p-3.5 shadow-xl transition-transform duration-100"
           style={{
             left: `${tooltipLeft}px`,
             top: `${tooltipTop}px`,

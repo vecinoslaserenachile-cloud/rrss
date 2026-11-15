@@ -23,6 +23,7 @@ interface BenchmarkSceneCanvasProps {
   resetCameraNonce: number;
   freeOrbitMode: boolean;
   autoPresent: boolean;
+  hudCollapsed?: boolean;
   onHoverRank?: (rank: number | null) => void;
 }
 
@@ -37,6 +38,31 @@ const _targetLookAt = new THREE.Vector3();
 const _mouseNdc = new THREE.Vector2();
 const _tempColor = new THREE.Color();
 
+const _tempDelta = new THREE.Vector3();
+
+function applyPortraitFraming(
+  presetPos: [number, number, number],
+  presetTarget: [number, number, number],
+  outPos: THREE.Vector3,
+  outTarget: THREE.Vector3,
+  aspect: number,
+  hudVisible: boolean
+) {
+  outPos.set(...presetPos);
+  outTarget.set(...presetTarget);
+  if (aspect < 0.92) {
+    const zoom = Math.min(2.2, Math.max(1.22, 1.05 / Math.max(aspect, 0.42)));
+    _tempDelta.copy(outPos).sub(outTarget).multiplyScalar(zoom);
+    outTarget.x *= 0.25;
+    if (hudVisible) {
+      outTarget.y = Math.max(-0.4, outTarget.y - 1.3);
+    } else {
+      outTarget.y = Math.max(0.2, outTarget.y - 0.15);
+    }
+    outPos.copy(outTarget).add(_tempDelta);
+  }
+}
+
 export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanvasProps>(
   (
     {
@@ -46,6 +72,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
       resetCameraNonce,
       freeOrbitMode,
       autoPresent,
+      hudCollapsed = false,
       onHoverRank,
     },
     ref
@@ -59,6 +86,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
     const highlightedRankRef = useRef(highlightedRank);
     const freeOrbitRef = useRef(freeOrbitMode);
     const autoPresentRef = useRef(autoPresent);
+    const hudCollapsedRef = useRef(hudCollapsed);
     const onHoverRankRef = useRef(onHoverRank);
     const cameraTransitionActiveRef = useRef(true);
     const captureApiRef = useRef<Scene3DHandle | null>(null);
@@ -69,6 +97,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
     highlightedRankRef.current = highlightedRank;
     freeOrbitRef.current = freeOrbitMode;
     autoPresentRef.current = autoPresent;
+    hudCollapsedRef.current = hudCollapsed;
     onHoverRankRef.current = onHoverRank;
 
     useImperativeHandle(
@@ -86,7 +115,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
 
     useEffect(() => {
       cameraTransitionActiveRef.current = true;
-    }, [activeChapter, resetCameraNonce]);
+    }, [activeChapter, resetCameraNonce, hudCollapsed]);
 
     useEffect(() => {
       duelSwitchRef.current?.(duelMode);
@@ -166,7 +195,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
       controls.dampingFactor = 0.06;
       controls.enablePan = false;
       controls.minDistance = 4.5;
-      controls.maxDistance = 19;
+      controls.maxDistance = 34;
       controls.minPolarAngle = 0.22;
       controls.maxPolarAngle = Math.PI / 2 - 0.05;
       controls.target.set(0.8, 2.3, 0);
@@ -381,6 +410,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
       };
 
       canvas.addEventListener('pointermove', handlePointerMove);
+      canvas.addEventListener('pointerdown', handlePointerMove);
       canvas.addEventListener('pointerleave', handlePointerLeave);
 
       const handleResize = () => {
@@ -390,6 +420,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
+        cameraTransitionActiveRef.current = true;
       };
       window.addEventListener('resize', handleResize);
 
@@ -502,8 +533,14 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
           }
 
           if (cameraTransitionActiveRef.current) {
-            _targetCamPos.set(...activeScene.cameraPreset.position);
-            _targetLookAt.set(...activeScene.cameraPreset.target);
+            applyPortraitFraming(
+              activeScene.cameraPreset.position,
+              activeScene.cameraPreset.target,
+              _targetCamPos,
+              _targetLookAt,
+              camera.aspect,
+              !hudCollapsedRef.current
+            );
             camera.position.x = THREE.MathUtils.damp(camera.position.x, _targetCamPos.x, 4.5, delta);
             camera.position.y = THREE.MathUtils.damp(camera.position.y, _targetCamPos.y, 4.5, delta);
             camera.position.z = THREE.MathUtils.damp(camera.position.z, _targetCamPos.z, 4.5, delta);
@@ -547,6 +584,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
         clearTimeout(frameId);
         window.removeEventListener('resize', handleResize);
         canvas.removeEventListener('pointermove', handlePointerMove);
+        canvas.removeEventListener('pointerdown', handlePointerMove);
         canvas.removeEventListener('pointerleave', handlePointerLeave);
         canvas.removeEventListener('webglcontextlost', handleContextLost);
         canvas.removeEventListener('webglcontextrestored', handleContextRestored);
@@ -576,8 +614,13 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
       };
     }, []);
 
-    const tooltipLeft = tooltip ? Math.min(tooltip.x + 16, window.innerWidth - 305) : 0;
-    const tooltipTop = tooltip ? Math.max(16, Math.min(tooltip.y - 16, window.innerHeight - 200)) : 0;
+    const tooltipW = typeof window !== 'undefined' ? Math.min(288, window.innerWidth - 24) : 288;
+    const tooltipLeft = tooltip
+      ? Math.max(12, Math.min(tooltip.x + 12, window.innerWidth - tooltipW - 12))
+      : 0;
+    const tooltipTop = tooltip
+      ? Math.max(64, Math.min(tooltip.y - 16, window.innerHeight - 210))
+      : 0;
     const hasVariance =
       tooltip?.payload.variancePct !== undefined && Number.isFinite(tooltip.payload.variancePct);
     const variance = hasVariance ? (tooltip!.payload.variancePct as number) : 0;
@@ -610,7 +653,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
 
         {tooltip && (
           <div
-            className="pointer-events-none fixed z-50 w-72 rounded-xl border border-white/15 bg-[#0A1226]/95 p-3.5 text-slate-100 shadow-2xl"
+            className="pointer-events-none fixed z-50 w-[min(18rem,calc(100vw-1.5rem))] rounded-xl border border-white/15 bg-[#0A1226]/95 p-3.5 text-slate-100 shadow-2xl"
             style={{ left: `${tooltipLeft}px`, top: `${tooltipTop}px` }}
           >
             <div className="flex items-center gap-2">

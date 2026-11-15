@@ -444,7 +444,7 @@ export default function App() {
 
   return (
     <main
-      className={`relative h-screen w-screen overflow-hidden ${
+      className={`relative h-[100dvh] w-screen overflow-hidden ${
         isBenchmark ? 'bg-[#060B19] text-white' : 'bg-[#F4F7FB] text-[#0F172A]'
       }`}
     >
@@ -460,6 +460,7 @@ export default function App() {
               resetCameraNonce={resetCameraNonce}
               freeOrbitMode={freeOrbitMode}
               autoPresent={autoPresent}
+              hudCollapsed={hudCollapsed}
               onHoverRank={setHighlightedRank}
             />
             <BenchmarkOverlays
@@ -480,6 +481,7 @@ export default function App() {
               resetCameraNonce={resetCameraNonce}
               freeOrbitMode={freeOrbitMode}
               autoPresent={autoPresent}
+              hudCollapsed={hudCollapsed}
               onHoverRank={setHighlightedRank}
             />
             <SlideOverlays
@@ -496,7 +498,7 @@ export default function App() {
       {/* Top Navigation Bar */}
       <header
         data-html2canvas-ignore="true"
-        className={`fixed top-0 right-0 left-0 z-30 flex h-14 items-center justify-between gap-4 border-t-0 border-r-0 border-l-0 px-5 lg:px-9 ${
+        className={`fixed top-0 right-0 left-0 z-30 flex h-14 items-center justify-between gap-2 border-t-0 border-r-0 border-l-0 px-3 sm:gap-4 sm:px-5 lg:px-9 ${
           isBenchmark ? 'dark-glass-panel border-b border-white/10' : 'glass-panel'
         }`}
       >
@@ -504,13 +506,18 @@ export default function App() {
         <button
           type="button"
           onClick={() => goToIndex(0)}
-          className={`font-display text-base font-bold tracking-tight whitespace-nowrap shrink-0 transition-colors ${
+          className={`font-display text-sm sm:text-base font-bold tracking-tight whitespace-nowrap shrink-0 transition-colors ${
             isBenchmark
               ? 'text-white hover:text-[#00F0FF]'
               : 'text-[#0F172A] hover:text-[#0284C7]'
           }`}
         >
-          {isBenchmark ? 'La Serena Benchmark 3D' : 'La Serena Digital 2026'}
+          <span className="sm:hidden">
+            {isBenchmark ? 'Benchmark 3D' : 'La Serena Digital'}
+          </span>
+          <span className="hidden sm:inline">
+            {isBenchmark ? 'La Serena Benchmark 3D' : 'La Serena Digital 2026'}
+          </span>
         </button>
 
         {/* Zone 2: Navigation Links */}
@@ -549,19 +556,22 @@ export default function App() {
         </nav>
 
         {/* Zone 3: Report Complement Switcher + Interactive Controls */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Complement Switcher Button */}
           <button
             type="button"
             onClick={() => switchReport(isBenchmark ? 'ecosistema' : 'benchmark')}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
+            className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-lg px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
               isBenchmark
                 ? 'border border-white/20 bg-white/10 text-white hover:bg-white/20'
                 : 'border border-[#00F0FF]/60 bg-[#060B19] text-[#00F0FF] shadow-md hover:bg-[#0F172A]'
             }`}
           >
             <Cpu className="h-3.5 w-3.5" />
-            <span>
+            <span className="sm:hidden">
+              {isBenchmark ? 'Ecosistema' : 'Benchmark'}
+            </span>
+            <span className="hidden sm:inline">
               {isBenchmark ? 'Ecosistema Regional (9L)' : 'Nuevo: Benchmark 3D (28d)'}
             </span>
           </button>
@@ -570,7 +580,7 @@ export default function App() {
             type="button"
             onClick={toggleAutoPresentation}
             title="Presentación automática con voz humana y transición continua entre ambos reportes"
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+            className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-lg px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
               autoPresent
                 ? 'bg-[#FF2E93] text-white shadow-md'
                 : isBenchmark
@@ -588,7 +598,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => setFreeOrbitMode((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+            className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-lg px-2.5 sm:px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
               isBenchmark
                 ? freeOrbitMode
                   ? 'bg-[#00F0FF] text-[#060B19]'
@@ -599,7 +609,10 @@ export default function App() {
             }`}
           >
             <Orbit className="h-3.5 w-3.5" />
-            {freeOrbitMode ? 'Órbita Libre Activa' : isBenchmark ? 'Órbita Libre' : 'Explorar 3D'}
+            <span className="sm:hidden">{freeOrbitMode ? '3D' : '3D'}</span>
+            <span className="hidden sm:inline">
+              {freeOrbitMode ? 'Órbita Libre Activa' : isBenchmark ? 'Órbita Libre' : 'Explorar 3D'}
+            </span>
           </button>
         </div>
       </header>
@@ -607,10 +620,10 @@ export default function App() {
       {/* Unified Floating Bottom Presentation Dock */}
       <div
         data-html2canvas-ignore="true"
-        className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2"
+        className="fixed bottom-3 sm:bottom-4 left-1/2 z-30 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-2"
       >
         <div
-          className={`flex items-center gap-1.5 rounded-2xl px-2.5 py-1.5 ${
+          className={`flex items-center gap-0.5 sm:gap-1.5 rounded-2xl px-1.5 sm:px-2.5 py-1 sm:py-1.5 ${
             isBenchmark ? 'dark-glass-panel' : 'glass-panel'
           }`}
         >
@@ -627,8 +640,8 @@ export default function App() {
             <ChevronLeft className="h-4 w-4" />
           </button>
 
-          {/* Indicators */}
-          <div className="flex items-center gap-1 px-1">
+          {/* Indicators (Desktop/Tablet) */}
+          <div className="hidden md:flex items-center gap-1 px-1">
             {itemsList.map((s) => {
               const active = s.id === currentIdx;
               return (
@@ -653,7 +666,7 @@ export default function App() {
           </div>
 
           <span
-            className={`font-mono-tabular px-2 text-xs font-semibold whitespace-nowrap shrink-0 ${
+            className={`font-mono-tabular px-1.5 sm:px-2 text-xs font-semibold whitespace-nowrap shrink-0 ${
               isBenchmark ? 'text-white' : 'text-[#0F172A]'
             }`}
           >
@@ -674,14 +687,15 @@ export default function App() {
           </button>
 
           <div
-            className={`mx-1 h-4 w-px ${isBenchmark ? 'bg-white/15' : 'bg-slate-900/10'}`}
+            className={`mx-0.5 sm:mx-1 h-4 w-px ${isBenchmark ? 'bg-white/15' : 'bg-slate-900/10'}`}
           />
 
           <button
             type="button"
             onClick={() => setHudCollapsed((prev) => !prev)}
             title="Alternar paneles (H)"
-            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+            aria-label={hudCollapsed ? 'Mostrar datos' : 'Solo 3D'}
+            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-2 sm:px-2.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
               isBenchmark
                 ? 'text-slate-300 hover:bg-white/10 hover:text-white'
                 : 'text-slate-700 hover:bg-slate-900/5 hover:text-[#0F172A]'
@@ -706,7 +720,7 @@ export default function App() {
           </button>
 
           <div
-            className={`mx-1 h-4 w-px ${isBenchmark ? 'bg-white/15' : 'bg-slate-900/10'}`}
+            className={`mx-0.5 sm:mx-1 h-4 w-px ${isBenchmark ? 'bg-white/15' : 'bg-slate-900/10'}`}
           />
 
           {narration.isSupported && (
@@ -714,7 +728,8 @@ export default function App() {
               type="button"
               onClick={narration.togglePlay}
               title="Audio narración con voz neural humana (N)"
-              className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+              aria-label={narration.isSpeaking ? 'Pausar audio' : 'Narrar lámina'}
+              className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-2.5 sm:px-3 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
                 narration.isSpeaking || narration.isLoadingAudio
                   ? isBenchmark
                     ? 'bg-[#FF2E93] text-white'
@@ -749,7 +764,8 @@ export default function App() {
               setExportOpen(true);
             }}
             title="Exportar reporte PDF/PNG o copiar enlace (E)"
-            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+            aria-label="Exportar reporte"
+            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-2.5 sm:px-3 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
               isBenchmark
                 ? 'bg-[#00F0FF]/15 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-[#060B19]'
                 : 'bg-[#0284C7]/10 text-[#0284C7] hover:bg-[#0284C7] hover:text-white'
@@ -767,14 +783,14 @@ export default function App() {
                 ? 'Volver al Reporte Ecosistema Instagram (9 Láminas)'
                 : 'Abrir Dashboard Benchmark 3D (28 Días)'
             }
-            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+            className={`hidden md:inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
               isBenchmark
                 ? 'bg-white/12 text-white hover:bg-white/20'
                 : 'bg-[#060B19] text-[#00F0FF] hover:bg-[#0F172A]'
             }`}
           >
             <Cpu className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">
+            <span>
               {isBenchmark ? 'Ecosistema' : 'Benchmark 3D'}
             </span>
           </button>
@@ -785,7 +801,7 @@ export default function App() {
       {(narration.showCaption || autoPresent || presentationCompleted) && (
         <div
           data-html2canvas-ignore="true"
-          className="fixed bottom-16 left-1/2 z-30 w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2"
+          className="fixed bottom-[4.25rem] sm:bottom-16 left-1/2 z-30 w-[calc(100vw-1rem)] sm:w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2"
         >
           <div
             className={`rounded-2xl px-4 py-2.5 text-xs shadow-xl ${
