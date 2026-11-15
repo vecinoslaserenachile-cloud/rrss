@@ -116,12 +116,14 @@ export const ActorEmblem: React.FC<ActorEmblemProps> = ({ kind, color, size = 38
         );
 
       case 'sound-leaf':
-        // Guayacán FM / Media Verde
+        // Guayacán Radio FM + señal digital
         return (
           <g>
-            <path d="M11 25c0-8 7-14 17-14 0 9-5 16-14 16-1.2 0-2.2-.8-3-2z" fill={color} opacity="0.9" />
-            <path d="M11 26c5-4 10-7 15-11" stroke="#060B19" strokeWidth="1.8" strokeLinecap="round" />
-            <circle cx="13" cy="13" r="2" fill="#34D399" />
+            <path d="M13 14.5l13-4.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+            <rect x="9" y="15" width="22" height="14" rx="3" fill="#1E293B" stroke={color} strokeWidth="1.8" />
+            <circle cx="15" cy="22" r="3.2" fill={color} />
+            <path d="M21 19.5h6.5M21 22.5h6.5M21 25.5h4.5" stroke="#34D399" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M26 11a4 4 0 0 1 3 3" fill="none" stroke="#34D399" strokeWidth="1.5" strokeLinecap="round" />
           </g>
         );
 
@@ -169,7 +171,7 @@ export const ActorEmblem: React.FC<ActorEmblemProps> = ({ kind, color, size = 38
         );
 
       case 'persona-ali':
-        // Miniatura retrato Alcalde de Coquimbo Ali Manouchehri (traje oscuro + banda alcaldicia)
+        // Miniatura retrato Alcalde de Coquimbo Ali Manouchery (traje oscuro + banda alcaldicia)
         return (
           <g>
             <path d="M10 33c0-5.5 4.2-9 10-9s10 3.5 10 9" fill="#1E293B" stroke={color} strokeWidth="1.5" />

@@ -127,7 +127,7 @@ export const REACH_SHARE_DATA: ReachShareItem[] = [
     interactionsLabel: '355k',
     sharePct: 9.9,
     color: '#10B981',
-    note: 'Alto retorno por publicación y conexión ciudadana directa.',
+    note: 'Radio FM con sólida presencia en redes y alto retorno por post.',
   },
   {
     id: 'la-serena-4',
@@ -447,7 +447,7 @@ export const LIKES_PIE_DATA: LikesPieSlice[] = [
     likesLabel: '264k',
     sharePct: 8.49,
     color: '#10B981',
-    role: 'Tercer referente informativo regional',
+    role: 'Radio FM · Tercer referente informativo regional',
   },
   {
     rank: 4,

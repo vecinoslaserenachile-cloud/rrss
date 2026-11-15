@@ -590,7 +590,7 @@ export const EXECUTIVE_DUAL_SUMMARY: ExecutiveReportSummaryCard[] = [
       { label: 'Engagement Medio', value: '1,97%' },
       { label: 'Crecimiento Neto', value: '+3,09%' },
     ],
-    leaders: 'Coquimbo (15,5%) · La Serena (10,1%) · Ali Manouchehri (3,51% ER)',
+    leaders: 'Coquimbo (15,5%) · La Serena (10,1%) · Ali Manouchery (3,51% ER)',
     keyInsight:
       '75,4% de sentimiento positivo. Migrar carruseles (49,4% vol.) a Reels cortos triplica el ER (2,08%) y Vie–Dom 21–00h lidera en eficacia.',
   },

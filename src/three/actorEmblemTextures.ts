@@ -220,7 +220,39 @@ function drawEmblemArtwork(
       break;
     }
 
-    case 'sound-leaf':
+    case 'sound-leaf': {
+      // Guayacán Radio FM + señal digital
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-14, -10);
+      ctx.lineTo(14, -22);
+      ctx.stroke();
+      ctx.fillStyle = '#1E293B';
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-24, -10, 48, 32, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(-10, 6, 7.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#34D399';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(4, 0);
+      ctx.lineTo(17, 0);
+      ctx.moveTo(4, 7);
+      ctx.lineTo(17, 7);
+      ctx.moveTo(4, 14);
+      ctx.lineTo(13, 14);
+      ctx.stroke();
+      break;
+    }
+
     case 'cam-urban':
     case 'papaya-tv':
     case 'neighbors': {
