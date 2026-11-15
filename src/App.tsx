@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   FileDown,
+  Focus,
   Loader2,
   Orbit,
   Play,
@@ -25,6 +26,7 @@ import { SlideOverlays } from './components/SlideOverlays';
 import { BENCHMARK_CHAPTERS } from './data/benchmarkData';
 import { SLIDES } from './data/coquimboData';
 import { BENCHMARK_NARRATIONS, ECOSYSTEM_NARRATIONS } from './data/narrationScripts';
+import { resolveActiveCue } from './data/presentationChoreography';
 import { useSlideNarration } from './hooks/useSlideNarration';
 import { ConurbanoDuelMode } from './three/benchmarkBuilders';
 import {
@@ -181,13 +183,31 @@ export default function App() {
     }, 1400);
   }, [activeBenchChapter, activeSlide, clearAutoAdvanceTimer, isBenchmark, isExporting]);
 
+  const currentSlideKey = `${activeReport}-${isBenchmark ? activeBenchChapter : activeSlide}`;
+
   const narration = useSlideNarration({
     script: currentNarrationScript,
-    slideKey: `${activeReport}-${isBenchmark ? activeBenchChapter : activeSlide}`,
+    slideKey: currentSlideKey,
     nextSlideKey: nextPrefetchTarget.key,
     nextScript: nextPrefetchTarget.script,
     onNarrationEnd: handleNarrationFinished,
   });
+
+  // Resolve real-time 3D camera, rank highlight, and interactive mode cues synced to audio progress
+  const activeCue =
+    autoPresent && !freeOrbitMode && !isExporting
+      ? resolveActiveCue(currentSlideKey, narration.progress)
+      : null;
+
+  useEffect(() => {
+    if (!activeCue) return;
+    if (activeCue.highlightRank !== undefined) {
+      setHighlightedRank(activeCue.highlightRank ?? null);
+    }
+    if (activeCue.duelMode) {
+      setDuelMode(activeCue.duelMode);
+    }
+  }, [activeCue]);
 
   useEffect(() => () => clearAutoAdvanceTimer(), [clearAutoAdvanceTimer]);
 
@@ -235,6 +255,8 @@ export default function App() {
     setPresentationCompleted(false);
     if (autoPresent) {
       setAutoPresent(false);
+      setHighlightedRank(null);
+      setResetCameraNonce((n) => n + 1);
       narration.setAutoNarrate(false);
       narration.stop();
     } else {
@@ -461,6 +483,7 @@ export default function App() {
               freeOrbitMode={freeOrbitMode}
               autoPresent={autoPresent}
               hudCollapsed={hudCollapsed}
+              directorCamera={activeCue?.camera ?? null}
               onHoverRank={setHighlightedRank}
             />
             <BenchmarkOverlays
@@ -482,6 +505,7 @@ export default function App() {
               freeOrbitMode={freeOrbitMode}
               autoPresent={autoPresent}
               hudCollapsed={hudCollapsed}
+              directorCamera={activeCue?.camera ?? null}
               onHoverRank={setHighlightedRank}
             />
             <SlideOverlays
@@ -917,6 +941,8 @@ export default function App() {
                 onClick={() => {
                   clearAutoAdvanceTimer();
                   setAutoPresent(false);
+                  setHighlightedRank(null);
+                  setResetCameraNonce((n) => n + 1);
                   setPresentationCompleted(false);
                   narration.stop();
                   narration.setAutoNarrate(false);
@@ -934,6 +960,32 @@ export default function App() {
               <p className="mt-1 text-[11px] text-amber-500">
                 Voz alternativa activa para esta pista (puedes volver a Sofía Neural HD cuando quieras).
               </p>
+            )}
+            {activeCue && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${
+                    isBenchmark
+                      ? 'border border-[#00F0FF]/35 bg-[#00F0FF]/12 text-[#00F0FF]'
+                      : 'border border-[#0284C7]/25 bg-[#0284C7]/10 text-[#0284C7]'
+                  }`}
+                >
+                  <Focus className="h-3 w-3 shrink-0" />
+                  <span>Cámara: {activeCue.focusBadge}</span>
+                </span>
+                <div
+                  className={`h-1 flex-1 overflow-hidden rounded-full ${
+                    isBenchmark ? 'bg-white/10' : 'bg-slate-200'
+                  }`}
+                >
+                  <div
+                    className={`h-full rounded-full transition-[width] duration-150 ${
+                      isBenchmark ? 'bg-[#00F0FF]' : 'bg-[#0284C7]'
+                    }`}
+                    style={{ width: `${Math.round(narration.progress * 100)}%` }}
+                  />
+                </div>
+              </div>
             )}
             <p className="mt-1.5 line-clamp-2 leading-relaxed">
               {narration.activeScript}

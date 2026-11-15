@@ -24,6 +24,10 @@ interface BenchmarkSceneCanvasProps {
   freeOrbitMode: boolean;
   autoPresent: boolean;
   hudCollapsed?: boolean;
+  directorCamera?: {
+    position: [number, number, number];
+    target: [number, number, number];
+  } | null;
   onHoverRank?: (rank: number | null) => void;
 }
 
@@ -46,16 +50,21 @@ function applyPortraitFraming(
   outPos: THREE.Vector3,
   outTarget: THREE.Vector3,
   aspect: number,
-  hudVisible: boolean
+  hudVisible: boolean,
+  isDirectorShot = false
 ) {
   outPos.set(...presetPos);
   outTarget.set(...presetTarget);
   if (aspect < 0.92) {
-    const zoom = Math.min(2.2, Math.max(1.22, 1.05 / Math.max(aspect, 0.42)));
+    const zoom = isDirectorShot
+      ? Math.min(1.55, Math.max(1.12, 0.88 / Math.max(aspect, 0.45)))
+      : Math.min(2.2, Math.max(1.22, 1.05 / Math.max(aspect, 0.42)));
     _tempDelta.copy(outPos).sub(outTarget).multiplyScalar(zoom);
-    outTarget.x *= 0.25;
+    if (!isDirectorShot) {
+      outTarget.x *= 0.25;
+    }
     if (hudVisible) {
-      outTarget.y = Math.max(-0.4, outTarget.y - 1.3);
+      outTarget.y = Math.max(-0.4, outTarget.y - (isDirectorShot ? 0.65 : 1.3));
     } else {
       outTarget.y = Math.max(0.2, outTarget.y - 0.15);
     }
@@ -73,6 +82,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
       freeOrbitMode,
       autoPresent,
       hudCollapsed = false,
+      directorCamera = null,
       onHoverRank,
     },
     ref
@@ -87,6 +97,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
     const freeOrbitRef = useRef(freeOrbitMode);
     const autoPresentRef = useRef(autoPresent);
     const hudCollapsedRef = useRef(hudCollapsed);
+    const directorCameraRef = useRef(directorCamera);
     const onHoverRankRef = useRef(onHoverRank);
     const cameraTransitionActiveRef = useRef(true);
     const captureApiRef = useRef<Scene3DHandle | null>(null);
@@ -98,6 +109,7 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
     freeOrbitRef.current = freeOrbitMode;
     autoPresentRef.current = autoPresent;
     hudCollapsedRef.current = hudCollapsed;
+    directorCameraRef.current = directorCamera;
     onHoverRankRef.current = onHoverRank;
 
     useImperativeHandle(
@@ -114,8 +126,10 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
     );
 
     useEffect(() => {
-      cameraTransitionActiveRef.current = true;
-    }, [activeChapter, resetCameraNonce, hudCollapsed]);
+      if (!freeOrbitMode) {
+        cameraTransitionActiveRef.current = true;
+      }
+    }, [activeChapter, resetCameraNonce, hudCollapsed, directorCamera, freeOrbitMode]);
 
     useEffect(() => {
       duelSwitchRef.current?.(duelMode);
@@ -474,7 +488,24 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
           activeScene.group.scale.setScalar(nextScale);
 
           if (autoPresentRef.current && !freeOrbitRef.current) {
-            activeScene.group.rotation.y += delta * 0.16;
+            if (directorCameraRef.current) {
+              // Keep orientation anchored with subtle breathing sway so close-ups stay centered on spoken nodes
+              const gentleSway = Math.sin(elapsed * 0.35) * 0.04;
+              activeScene.group.rotation.y = THREE.MathUtils.damp(
+                activeScene.group.rotation.y,
+                gentleSway,
+                4.5,
+                delta
+              );
+              activeScene.group.rotation.x = THREE.MathUtils.damp(
+                activeScene.group.rotation.x,
+                0,
+                4.5,
+                delta
+              );
+            } else {
+              activeScene.group.rotation.y += delta * 0.16;
+            }
           } else if (!freeOrbitRef.current) {
             const targetRotY = pointerOffsetX * 0.16;
             const targetRotX = -pointerOffsetY * 0.08;
@@ -533,21 +564,25 @@ export const BenchmarkSceneCanvas = forwardRef<Scene3DHandle, BenchmarkSceneCanv
           }
 
           if (cameraTransitionActiveRef.current) {
+            const activeDirector = !freeOrbitRef.current ? directorCameraRef.current : null;
+            const camCfg = activeDirector ?? activeScene.cameraPreset;
             applyPortraitFraming(
-              activeScene.cameraPreset.position,
-              activeScene.cameraPreset.target,
+              camCfg.position,
+              camCfg.target,
               _targetCamPos,
               _targetLookAt,
               camera.aspect,
-              !hudCollapsedRef.current
+              !hudCollapsedRef.current,
+              Boolean(activeDirector)
             );
-            camera.position.x = THREE.MathUtils.damp(camera.position.x, _targetCamPos.x, 4.5, delta);
-            camera.position.y = THREE.MathUtils.damp(camera.position.y, _targetCamPos.y, 4.5, delta);
-            camera.position.z = THREE.MathUtils.damp(camera.position.z, _targetCamPos.z, 4.5, delta);
+            const dampSpeed = activeDirector ? 3.2 : 4.5;
+            camera.position.x = THREE.MathUtils.damp(camera.position.x, _targetCamPos.x, dampSpeed, delta);
+            camera.position.y = THREE.MathUtils.damp(camera.position.y, _targetCamPos.y, dampSpeed, delta);
+            camera.position.z = THREE.MathUtils.damp(camera.position.z, _targetCamPos.z, dampSpeed, delta);
 
-            controls.target.x = THREE.MathUtils.damp(controls.target.x, _targetLookAt.x, 4.5, delta);
-            controls.target.y = THREE.MathUtils.damp(controls.target.y, _targetLookAt.y, 4.5, delta);
-            controls.target.z = THREE.MathUtils.damp(controls.target.z, _targetLookAt.z, 4.5, delta);
+            controls.target.x = THREE.MathUtils.damp(controls.target.x, _targetLookAt.x, dampSpeed, delta);
+            controls.target.y = THREE.MathUtils.damp(controls.target.y, _targetLookAt.y, dampSpeed, delta);
+            controls.target.z = THREE.MathUtils.damp(controls.target.z, _targetLookAt.z, dampSpeed, delta);
 
             if (
               camera.position.distanceTo(_targetCamPos) < 0.03 &&

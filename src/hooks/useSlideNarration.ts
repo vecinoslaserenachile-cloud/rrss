@@ -166,11 +166,13 @@ export function useSlideNarration({
   const [engineMode, setEngineMode] = useState<AudioEngineMode>('gemini');
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [progress, setProgress] = useState<number>(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const unlockedRef = useRef<boolean>(false);
   const unlockPromiseRef = useRef<Promise<void> | null>(null);
   const watchdogRef = useRef<number | null>(null);
+  const progressIntervalRef = useRef<number | null>(null);
   const activeSessionRef = useRef<number>(0);
   const onNarrationEndRef = useRef(onNarrationEnd);
   const voiceRef = useRef<NarrationVoiceId>(voice);
@@ -217,6 +219,13 @@ export function useSlideNarration({
     }
   }, []);
 
+  const clearProgressInterval = useCallback(() => {
+    if (progressIntervalRef.current) {
+      window.clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  }, []);
+
   // Synchronously unlock the shared HTMLAudioElement inside a user click/keypress
   const unlockAudio = useCallback(() => {
     const audio = audioRef.current;
@@ -245,6 +254,7 @@ export function useSlideNarration({
   const stop = useCallback(() => {
     activeSessionRef.current += 1;
     clearWatchdog();
+    clearProgressInterval();
 
     const audio = audioRef.current;
     if (audio) {
@@ -265,7 +275,8 @@ export function useSlideNarration({
 
     setIsLoadingAudio(false);
     setIsSpeaking(false);
-  }, [browserTtsSupported, clearWatchdog]);
+    setProgress(0);
+  }, [browserTtsSupported, clearProgressInterval, clearWatchdog]);
 
   const speakWithBrowserFallback = useCallback(
     (sessionId: number, textToSpeak: string, playbackRate: number) => {
@@ -282,6 +293,17 @@ export function useSlideNarration({
       const chunks = splitIntoShortSentences(textToSpeak, 130);
       const best = pickBestSpanishBrowserVoice(browserVoices);
       let chunkIdx = 0;
+      let chunkStartedAt = performance.now();
+      let chunkEstMs = 4000;
+
+      clearProgressInterval();
+      progressIntervalRef.current = window.setInterval(() => {
+        if (activeSessionRef.current !== sessionId) return;
+        const elapsed = performance.now() - chunkStartedAt;
+        const intraChunk = Math.min(0.95, elapsed / Math.max(1000, chunkEstMs));
+        const pct = Math.min(1, (chunkIdx + intraChunk) / Math.max(1, chunks.length));
+        setProgress(pct);
+      }, 140);
 
       const finishChunk = () => {
         if (activeSessionRef.current !== sessionId) return;
@@ -290,6 +312,8 @@ export function useSlideNarration({
         if (chunkIdx < chunks.length) {
           speakNextChunk();
         } else {
+          clearProgressInterval();
+          setProgress(1);
           setIsSpeaking(false);
           onNarrationEndRef.current?.();
         }
@@ -303,6 +327,9 @@ export function useSlideNarration({
         if (best) utterance.voice = best;
         utterance.rate = playbackRate;
         utterance.pitch = 1.0;
+
+        chunkStartedAt = performance.now();
+        chunkEstMs = Math.max(1800, Math.round((chunkText.length / 13) * 1000 / playbackRate));
 
         let settled = false;
         const settle = () => {
@@ -330,7 +357,7 @@ export function useSlideNarration({
       window.speechSynthesis.cancel();
       speakNextChunk();
     },
-    [browserTtsSupported, browserVoices, clearWatchdog]
+    [browserTtsSupported, browserVoices, clearProgressInterval, clearWatchdog]
   );
 
   const speakCurrent = useCallback(
@@ -379,6 +406,8 @@ export function useSlideNarration({
         const finishAudio = () => {
           if (activeSessionRef.current === sessionId) {
             clearWatchdog();
+            clearProgressInterval();
+            setProgress(1);
             setIsSpeaking(false);
             onNarrationEndRef.current?.();
           }
@@ -398,11 +427,21 @@ export function useSlideNarration({
         audio.onerror = () => {
           if (activeSessionRef.current === sessionId) {
             clearWatchdog();
+            clearProgressInterval();
             setIsSpeaking(false);
             setIsLoadingAudio(false);
             speakWithBrowserFallback(sessionId, script, targetRate);
           }
         };
+
+        clearProgressInterval();
+        setProgress(0);
+        progressIntervalRef.current = window.setInterval(() => {
+          if (activeSessionRef.current !== sessionId) return;
+          if (Number.isFinite(audio.duration) && audio.duration > 0) {
+            setProgress(Math.min(1, Math.max(0, audio.currentTime / audio.duration)));
+          }
+        }, 120);
 
         setIsSpeaking(true);
         await audio.play();
@@ -410,6 +449,7 @@ export function useSlideNarration({
       } catch (err) {
         if (activeSessionRef.current !== sessionId) return;
         clearWatchdog();
+        clearProgressInterval();
         setIsLoadingAudio(false);
 
         // If browser blocked autoplay (NotAllowedError), keep neural audio and prompt 1 click instead of robotic fallback!
@@ -426,7 +466,7 @@ export function useSlideNarration({
         speakWithBrowserFallback(sessionId, script, targetRate);
       }
     },
-    [clearWatchdog, nextScript, nextSlideKey, script, slideKey, speakWithBrowserFallback, stop, unlockAudio]
+    [clearProgressInterval, clearWatchdog, nextScript, nextSlideKey, script, slideKey, speakWithBrowserFallback, stop, unlockAudio]
   );
 
   const togglePlay = useCallback(() => {
@@ -494,6 +534,7 @@ export function useSlideNarration({
     cycleVoice,
     engineMode,
     errorNotice,
+    progress,
     showCaption,
     setShowCaption,
     unlockAudio,

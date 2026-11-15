@@ -25,6 +25,10 @@ interface Scene3DCanvasProps {
   freeOrbitMode: boolean;
   autoPresent?: boolean;
   hudCollapsed?: boolean;
+  directorCamera?: {
+    position: [number, number, number];
+    target: [number, number, number];
+  } | null;
   onHoverRank?: (rank: number | null) => void;
 }
 
@@ -53,16 +57,21 @@ function applyPortraitFraming(
   outPos: THREE.Vector3,
   outTarget: THREE.Vector3,
   aspect: number,
-  hudVisible: boolean
+  hudVisible: boolean,
+  isDirectorShot = false
 ) {
   outPos.set(...presetPos);
   outTarget.set(...presetTarget);
   if (aspect < 0.92) {
-    const zoom = Math.min(2.15, Math.max(1.22, 1.02 / Math.max(aspect, 0.42)));
+    const zoom = isDirectorShot
+      ? Math.min(1.52, Math.max(1.12, 0.86 / Math.max(aspect, 0.45)))
+      : Math.min(2.15, Math.max(1.22, 1.02 / Math.max(aspect, 0.42)));
     _tempDelta.copy(outPos).sub(outTarget).multiplyScalar(zoom);
-    outTarget.x *= 0.25;
+    if (!isDirectorShot) {
+      outTarget.x *= 0.25;
+    }
     if (hudVisible) {
-      outTarget.y = Math.max(-0.4, outTarget.y - 1.25);
+      outTarget.y = Math.max(-0.4, outTarget.y - (isDirectorShot ? 0.65 : 1.25));
     } else {
       outTarget.y = Math.max(0.2, outTarget.y - 0.15);
     }
@@ -79,6 +88,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
       freeOrbitMode,
       autoPresent = false,
       hudCollapsed = false,
+      directorCamera = null,
       onHoverRank,
     },
     ref
@@ -93,6 +103,7 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
   const freeOrbitRef = useRef(freeOrbitMode);
   const autoPresentRef = useRef(autoPresent);
   const hudCollapsedRef = useRef(hudCollapsed);
+  const directorCameraRef = useRef(directorCamera);
   const onHoverRankRef = useRef(onHoverRank);
   const cameraTransitionActiveRef = useRef(true);
   const captureApiRef = useRef<Scene3DHandle | null>(null);
@@ -115,12 +126,15 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
   freeOrbitRef.current = freeOrbitMode;
   autoPresentRef.current = autoPresent;
   hudCollapsedRef.current = hudCollapsed;
+  directorCameraRef.current = directorCamera;
   onHoverRankRef.current = onHoverRank;
 
-  // Trigger smooth camera preset glide when slide, HUD visibility, or reset changes
+  // Trigger smooth camera preset glide when slide, HUD visibility, director cue, or reset changes
   useEffect(() => {
-    cameraTransitionActiveRef.current = true;
-  }, [activeSlide, resetCameraNonce, hudCollapsed]);
+    if (!freeOrbitMode) {
+      cameraTransitionActiveRef.current = true;
+    }
+  }, [activeSlide, resetCameraNonce, hudCollapsed, directorCamera, freeOrbitMode]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -478,11 +492,14 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
         const nextScale = THREE.MathUtils.damp(activeScene.group.scale.x, 1, 7, delta);
         activeScene.group.scale.setScalar(nextScale);
 
-        // Gentle mouse rotation parallax + optional autoPresent sway when not orbiting manually
+        // Gentle mouse rotation parallax + subtle sway (reduced during close-up director shots so targets stay framed)
         if (!freeOrbitRef.current) {
-          const autoSway = autoPresentRef.current ? Math.sin(elapsed * 0.35) * 0.14 : 0;
-          const targetRotY = pointerOffsetX * 0.16 + autoSway;
-          const targetRotX = -pointerOffsetY * 0.08;
+          const isDirected = Boolean(directorCameraRef.current);
+          const autoSway = autoPresentRef.current
+            ? Math.sin(elapsed * 0.35) * (isDirected ? 0.035 : 0.14)
+            : 0;
+          const targetRotY = pointerOffsetX * (isDirected ? 0.05 : 0.16) + autoSway;
+          const targetRotX = -pointerOffsetY * (isDirected ? 0.03 : 0.08);
           activeScene.group.rotation.y = THREE.MathUtils.damp(
             activeScene.group.rotation.y,
             targetRotY,
@@ -571,24 +588,28 @@ export const Scene3DCanvas = forwardRef<Scene3DHandle, Scene3DCanvasProps>(
           });
         }
 
-        // Smooth camera preset transition (portrait-aware for vertical mobile)
+        // Smooth camera preset / director choreography transition (portrait-aware for vertical mobile)
         if (cameraTransitionActiveRef.current) {
+          const activeDirector = !freeOrbitRef.current ? directorCameraRef.current : null;
+          const camCfg = activeDirector ?? activeScene.cameraPreset;
           applyPortraitFraming(
-            activeScene.cameraPreset.position,
-            activeScene.cameraPreset.target,
+            camCfg.position,
+            camCfg.target,
             _targetCamPos,
             _targetLookAt,
             camera.aspect,
-            !hudCollapsedRef.current
+            !hudCollapsedRef.current,
+            Boolean(activeDirector)
           );
 
-          camera.position.x = THREE.MathUtils.damp(camera.position.x, _targetCamPos.x, 4.5, delta);
-          camera.position.y = THREE.MathUtils.damp(camera.position.y, _targetCamPos.y, 4.5, delta);
-          camera.position.z = THREE.MathUtils.damp(camera.position.z, _targetCamPos.z, 4.5, delta);
+          const dampSpeed = activeDirector ? 3.2 : 4.5;
+          camera.position.x = THREE.MathUtils.damp(camera.position.x, _targetCamPos.x, dampSpeed, delta);
+          camera.position.y = THREE.MathUtils.damp(camera.position.y, _targetCamPos.y, dampSpeed, delta);
+          camera.position.z = THREE.MathUtils.damp(camera.position.z, _targetCamPos.z, dampSpeed, delta);
 
-          controls.target.x = THREE.MathUtils.damp(controls.target.x, _targetLookAt.x, 4.5, delta);
-          controls.target.y = THREE.MathUtils.damp(controls.target.y, _targetLookAt.y, 4.5, delta);
-          controls.target.z = THREE.MathUtils.damp(controls.target.z, _targetLookAt.z, 4.5, delta);
+          controls.target.x = THREE.MathUtils.damp(controls.target.x, _targetLookAt.x, dampSpeed, delta);
+          controls.target.y = THREE.MathUtils.damp(controls.target.y, _targetLookAt.y, dampSpeed, delta);
+          controls.target.z = THREE.MathUtils.damp(controls.target.z, _targetLookAt.z, dampSpeed, delta);
 
           if (
             camera.position.distanceTo(_targetCamPos) < 0.03 &&
