@@ -3,6 +3,7 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,6 +11,85 @@ const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT) || 3000;
 const ALLOWED_VOICES = new Set(['Kore', 'Charon', 'Puck', 'Fenrir', 'Zephyr']);
+
+// Edición N° 3 institutional access key & persistent audit registry
+const EDICION3_ACCESS_KEYS = new Set(
+  [
+    process.env.EDICION3_ACCESS_KEY?.trim(),
+    'CONDOMINIOS2026',
+    'VLS-ED3-2026',
+  ]
+    .filter((v): v is string => Boolean(v))
+    .map((v) => v.toUpperCase())
+);
+const EDICION3_LOG_FILE = path.resolve(__dirname, 'data/edicion3-access-log.json');
+const EDICION3_TOKEN_SECRET =
+  process.env.EDICION3_ACCESS_KEY?.trim() || 'VLS-CONDOMINIOS-2026-SESSION-SECRET';
+
+export interface Edicion3AccessLogEntry {
+  id: string;
+  timestamp: string;
+  visitorName: string;
+  institution: string;
+  role: string;
+  status: 'granted' | 'denied';
+  slideSlug: string;
+  ip: string;
+  userAgent: string;
+  source: 'server';
+}
+
+function loadEdicion3Logs(): Edicion3AccessLogEntry[] {
+  try {
+    if (!fs.existsSync(EDICION3_LOG_FILE)) return [];
+    const raw = fs.readFileSync(EDICION3_LOG_FILE, 'utf-8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function appendEdicion3Log(entry: Edicion3AccessLogEntry): Edicion3AccessLogEntry[] {
+  const existing = loadEdicion3Logs();
+  const updated = [entry, ...existing].slice(0, 500);
+  try {
+    const dir = path.dirname(EDICION3_LOG_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(EDICION3_LOG_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[Edicion3 Log Write Warning]', err);
+  }
+  return updated;
+}
+
+function signEdicion3Token(visitorName: string): string {
+  const payload = `${visitorName}::${Date.now()}`;
+  const sig = crypto
+    .createHmac('sha256', EDICION3_TOKEN_SECRET)
+    .update(payload)
+    .digest('hex')
+    .slice(0, 24);
+  return Buffer.from(`${payload}::${sig}`).toString('base64url');
+}
+
+function verifyEdicion3Token(token: string | undefined): boolean {
+  if (!token) return false;
+  try {
+    const decoded = Buffer.from(token, 'base64url').toString('utf-8');
+    const parts = decoded.split('::');
+    if (parts.length !== 3) return false;
+    const [visitorName, ts, sig] = parts;
+    const expected = crypto
+      .createHmac('sha256', EDICION3_TOKEN_SECRET)
+      .update(`${visitorName}::${ts}`)
+      .digest('hex')
+      .slice(0, 24);
+    return sig === expected;
+  } catch {
+    return false;
+  }
+}
 
 const DEFAULT_STYLE =
   'Locutor profesional chileno de nivel ejecutivo presentando un informe estratégico ante un directorio: voz humana cálida, natural, expresiva, con pausas respiratorias auténticas, énfasis en las cifras clave y tono conversacional fluido sin sonar robótico.';
@@ -129,6 +209,81 @@ async function synthesizeWithRetry(
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
+
+  // Verify access key for Edición N° 3 and record access audit entry
+  app.post('/api/edicion3/verify', (req, res) => {
+    const rawKey = typeof req.body?.key === 'string' ? req.body.key.trim().toUpperCase() : '';
+    const visitorName =
+      typeof req.body?.visitorName === 'string' && req.body.visitorName.trim()
+        ? req.body.visitorName.trim().slice(0, 80)
+        : 'Visitante Anónimo';
+    const institution =
+      typeof req.body?.institution === 'string' && req.body.institution.trim()
+        ? req.body.institution.trim().slice(0, 80)
+        : 'No especificada';
+    const role =
+      typeof req.body?.role === 'string' && req.body.role.trim()
+        ? req.body.role.trim().slice(0, 60)
+        : 'Consulta ejecutiva';
+    const slideSlug =
+      typeof req.body?.slideSlug === 'string' && req.body.slideSlug.trim()
+        ? req.body.slideSlug.trim().slice(0, 48)
+        : 'resumen-ejecutivo';
+
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const rawIp = Array.isArray(forwardedFor)
+      ? forwardedFor[0]
+      : typeof forwardedFor === 'string'
+        ? forwardedFor.split(',')[0].trim()
+        : req.socket.remoteAddress || 'local';
+    const userAgent = String(req.headers['user-agent'] || 'Desconocido').slice(0, 140);
+
+    const granted = Boolean(rawKey && EDICION3_ACCESS_KEYS.has(rawKey));
+    const entry: Edicion3AccessLogEntry = {
+      id: `ed3-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: new Date().toISOString(),
+      visitorName,
+      institution,
+      role,
+      status: granted ? 'granted' : 'denied',
+      slideSlug,
+      ip: rawIp,
+      userAgent,
+      source: 'server',
+    };
+
+    const logs = appendEdicion3Log(entry);
+
+    if (!granted) {
+      res.status(401).json({
+        ok: false,
+        error: 'Clave de acceso incorrecta. Intento registrado en la bitácora.',
+        entry,
+      });
+      return;
+    }
+
+    const sessionToken = signEdicion3Token(visitorName);
+    res.json({
+      ok: true,
+      sessionToken,
+      entry,
+      logs,
+    });
+  });
+
+  // Retrieve access log history for authenticated Edición N° 3 session
+  app.get('/api/edicion3/logs', (req, res) => {
+    const token =
+      typeof req.headers['x-edicion3-token'] === 'string'
+        ? req.headers['x-edicion3-token']
+        : undefined;
+    if (!verifyEdicion3Token(token)) {
+      res.status(401).json({ error: 'Sesión no autorizada para consultar la bitácora.' });
+      return;
+    }
+    res.json({ logs: loadEdicion3Logs() });
+  });
 
   // Check whether Gemini neural TTS is available on the server
   app.get('/api/tts/status', (_req, res) => {

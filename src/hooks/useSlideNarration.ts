@@ -199,10 +199,13 @@ export function useSlideNarration({
   const [progress, setProgress] = useState<number>(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const unlockAudioElRef = useRef<HTMLAudioElement | null>(null);
   const unlockedRef = useRef<boolean>(false);
   const unlockPromiseRef = useRef<Promise<void> | null>(null);
   const watchdogRef = useRef<number | null>(null);
   const progressIntervalRef = useRef<number | null>(null);
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const fallbackStartTimerRef = useRef<number | null>(null);
   const activeSessionRef = useRef<number>(0);
   const onNarrationEndRef = useRef(onNarrationEnd);
   const voiceRef = useRef<NarrationVoiceId>(voice);
@@ -234,11 +237,21 @@ export function useSlideNarration({
   useEffect(() => {
     const audio = new Audio();
     audio.preload = 'auto';
+    audio.setAttribute('playsinline', 'true');
     audioRef.current = audio;
+
+    const unlockEl = new Audio();
+    unlockEl.preload = 'auto';
+    unlockEl.setAttribute('playsinline', 'true');
+    unlockAudioElRef.current = unlockEl;
+
     return () => {
       audio.pause();
-      audio.src = '';
+      audio.removeAttribute('src');
       audioRef.current = null;
+      unlockEl.pause();
+      unlockEl.removeAttribute('src');
+      unlockAudioElRef.current = null;
     };
   }, []);
 
@@ -256,24 +269,30 @@ export function useSlideNarration({
     }
   }, []);
 
-  // Synchronously unlock the shared HTMLAudioElement inside a user click/keypress
+  const clearFallbackStartTimer = useCallback(() => {
+    if (fallbackStartTimerRef.current) {
+      window.clearTimeout(fallbackStartTimerRef.current);
+      fallbackStartTimerRef.current = null;
+    }
+  }, []);
+
+  // Synchronously unlock audio inside a user click/keypress without touching the playback element
   const unlockAudio = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || unlockedRef.current) return;
+    const unlockEl = unlockAudioElRef.current;
+    if (!unlockEl || unlockedRef.current) return;
     if (unlockPromiseRef.current) return;
 
-    audio.src = SILENT_WAV_DATA_URI;
-    audio.volume = 0;
-    const p = audio
+    unlockEl.src = SILENT_WAV_DATA_URI;
+    unlockEl.volume = 0;
+    const p = unlockEl
       .play()
       .then(() => {
-        audio.pause();
-        audio.volume = 1;
+        unlockEl.pause();
         unlockedRef.current = true;
         setAutoplayBlocked(false);
       })
       .catch(() => {
-        audio.volume = 1;
+        // Silent unlock may be blocked before first real user interaction
       })
       .finally(() => {
         unlockPromiseRef.current = null;
@@ -285,6 +304,8 @@ export function useSlideNarration({
     activeSessionRef.current += 1;
     clearWatchdog();
     clearProgressInterval();
+    clearFallbackStartTimer();
+    activeUtteranceRef.current = null;
 
     const audio = audioRef.current;
     if (audio) {
@@ -306,13 +327,15 @@ export function useSlideNarration({
     setIsLoadingAudio(false);
     setIsSpeaking(false);
     setProgress(0);
-  }, [browserTtsSupported, clearProgressInterval, clearWatchdog]);
+  }, [browserTtsSupported, clearFallbackStartTimer, clearProgressInterval, clearWatchdog]);
 
   const speakWithBrowserFallback = useCallback(
     (sessionId: number, textToSpeak: string, playbackRate: number) => {
-      if (!browserTtsSupported || !textToSpeak) {
-        setIsSpeaking(false);
-        onNarrationEndRef.current?.();
+      if (!browserTtsSupported || !textToSpeak || activeSessionRef.current !== sessionId) {
+        if (activeSessionRef.current === sessionId) {
+          setIsSpeaking(false);
+          onNarrationEndRef.current?.();
+        }
         return;
       }
 
@@ -321,7 +344,8 @@ export function useSlideNarration({
       setShowCaption(true);
 
       const chunks = splitIntoShortSentences(textToSpeak, 130);
-      const best = pickBestSpanishBrowserVoice(browserVoices);
+      const liveVoices = window.speechSynthesis.getVoices();
+      const best = pickBestSpanishBrowserVoice(liveVoices.length ? liveVoices : browserVoices);
       let chunkIdx = 0;
       let chunkStartedAt = performance.now();
       let chunkEstMs = 4000;
@@ -338,6 +362,7 @@ export function useSlideNarration({
       const finishChunk = () => {
         if (activeSessionRef.current !== sessionId) return;
         clearWatchdog();
+        activeUtteranceRef.current = null;
         chunkIdx += 1;
         if (chunkIdx < chunks.length) {
           speakNextChunk();
@@ -358,6 +383,9 @@ export function useSlideNarration({
         utterance.rate = playbackRate;
         utterance.pitch = 1.0;
 
+        // Keep strong ref to avoid GC dropping onend in Chrome/Safari mobile
+        activeUtteranceRef.current = utterance;
+
         chunkStartedAt = performance.now();
         chunkEstMs = Math.max(1800, Math.round((chunkText.length / 13) * 1000 / playbackRate));
 
@@ -371,8 +399,7 @@ export function useSlideNarration({
         utterance.onend = settle;
         utterance.onerror = settle;
 
-        // Per-chunk anti-freeze watchdog (prevents Chrome speechSynthesis hang)
-        const estimatedMs = Math.max(4000, Math.round((chunkText.length / 11) * 1000 / playbackRate) + 3500);
+        const estimatedMs = Math.max(4500, Math.round((chunkText.length / 11) * 1000 / playbackRate) + 4000);
         clearWatchdog();
         watchdogRef.current = window.setTimeout(() => {
           if (activeSessionRef.current === sessionId) {
@@ -385,9 +412,15 @@ export function useSlideNarration({
       };
 
       window.speechSynthesis.cancel();
-      speakNextChunk();
+      clearFallbackStartTimer();
+      // Small delay after cancel() avoids Chrome dropping the next speak() call silently
+      fallbackStartTimerRef.current = window.setTimeout(() => {
+        if (activeSessionRef.current === sessionId) {
+          speakNextChunk();
+        }
+      }, 45);
     },
-    [browserTtsSupported, browserVoices, clearProgressInterval, clearWatchdog]
+    [browserTtsSupported, browserVoices, clearFallbackStartTimer, clearProgressInterval, clearWatchdog]
   );
 
   const speakCurrent = useCallback(
@@ -429,10 +462,6 @@ export function useSlideNarration({
         setIsLoadingAudio(false);
         setEngineMode('gemini');
 
-        audio.volume = 1;
-        audio.src = audioUrl;
-        audio.playbackRate = targetRate;
-
         const finishAudio = () => {
           if (activeSessionRef.current === sessionId) {
             clearWatchdog();
@@ -443,17 +472,19 @@ export function useSlideNarration({
           }
         };
 
-        audio.onloadedmetadata = () => {
+        const armDurationWatchdog = () => {
           if (activeSessionRef.current !== sessionId) return;
-          if (Number.isFinite(audio.duration) && audio.duration > 0) {
-            clearWatchdog();
-            const safeMs = Math.round(((audio.duration / targetRate) + 4) * 1000);
-            watchdogRef.current = window.setTimeout(finishAudio, safeMs);
-          }
+          clearWatchdog();
+          const hasDur = Number.isFinite(audio.duration) && audio.duration > 0;
+          const safeMs = hasDur
+            ? Math.round(((audio.duration / targetRate) + 4) * 1000)
+            : Math.max(22000, Math.round((script.length / 11) * 1000 / targetRate) + 8000);
+          watchdogRef.current = window.setTimeout(finishAudio, safeMs);
         };
 
+        // Bind event listeners BEFORE assigning audio.src so cached blob URLs never miss metadata events
+        audio.onloadedmetadata = armDurationWatchdog;
         audio.onended = finishAudio;
-
         audio.onerror = () => {
           if (activeSessionRef.current === sessionId) {
             clearWatchdog();
@@ -463,6 +494,12 @@ export function useSlideNarration({
             speakWithBrowserFallback(sessionId, script, targetRate);
           }
         };
+
+        audio.volume = 1;
+        audio.src = audioUrl;
+        audio.playbackRate = targetRate;
+        audio.load();
+        armDurationWatchdog();
 
         clearProgressInterval();
         setProgress(0);
@@ -475,6 +512,9 @@ export function useSlideNarration({
 
         setIsSpeaking(true);
         await audio.play();
+        if (activeSessionRef.current !== sessionId) return;
+        audio.playbackRate = targetRate;
+        armDurationWatchdog();
         unlockedRef.current = true;
       } catch (err) {
         if (activeSessionRef.current !== sessionId) return;
@@ -482,9 +522,10 @@ export function useSlideNarration({
         clearProgressInterval();
         setIsLoadingAudio(false);
 
-        // If browser blocked autoplay (NotAllowedError), keep neural audio and prompt 1 click instead of robotic fallback!
         const errName = (err as { name?: string })?.name || '';
         const errMsg = err instanceof Error ? err.message : String(err);
+
+        // If browser blocked autoplay (NotAllowedError), keep neural audio and prompt 1 click instead of robotic fallback
         if (errName === 'NotAllowedError' || /not allowed|user didn't interact/i.test(errMsg)) {
           setIsSpeaking(false);
           setEngineMode('gemini');
@@ -492,6 +533,7 @@ export function useSlideNarration({
           return;
         }
 
+        // Ignore transient AbortError only if session already changed; otherwise fall back cleanly
         setErrorNotice(errMsg);
         speakWithBrowserFallback(sessionId, script, targetRate);
       }
@@ -507,6 +549,14 @@ export function useSlideNarration({
       void speakCurrent();
     }
   }, [isLoadingAudio, isSpeaking, speakCurrent, stop, unlockAudio]);
+
+  const setAutoNarrateWithUnlock = useCallback(
+    (value: boolean) => {
+      if (value) unlockAudio();
+      setAutoNarrate(value);
+    },
+    [unlockAudio]
+  );
 
   // Automatically narrate when slideKey changes if autoNarrate is enabled
   useEffect(() => {
@@ -556,7 +606,7 @@ export function useSlideNarration({
     isLoadingAudio,
     autoplayBlocked,
     autoNarrate,
-    setAutoNarrate,
+    setAutoNarrate: setAutoNarrateWithUnlock,
     rate,
     cycleRate,
     voice,

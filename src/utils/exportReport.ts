@@ -73,7 +73,8 @@ function drawSlidePageInPdf(
   issuedDate: string,
   theme: ExportTheme = 'light',
   reportSubtitle = 'La Serena Digital 2026 (14 oct – 14 nov)',
-  unitWord = 'Lámina'
+  unitWord = 'Lámina',
+  footerBrand = 'reporte.vecinoslaserena.cl'
 ) {
   const isDark = theme === 'dark';
 
@@ -136,7 +137,7 @@ function drawSlidePageInPdf(
   } else {
     doc.setTextColor(15, 23, 42);
   }
-  doc.text('reporte.vecinoslaserena.cl', 14.5, PDF_PAGE_H - 3.6);
+  doc.text(footerBrand, 14.5, PDF_PAGE_H - 3.6);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
@@ -147,7 +148,7 @@ function drawSlidePageInPdf(
   }
   doc.text(
     `${reportSubtitle}  ·  ${slideLabel}  ·  ${issuedDate}`,
-    60,
+    footerBrand === 'reporte.vecinoslaserena.cl' ? 60 : 72,
     PDF_PAGE_H - 3.6
   );
 
@@ -351,6 +352,7 @@ export async function exportCurrentSlidePdf(
     prefix?: string;
     reportSubtitle?: string;
     unitWord?: string;
+    footerBrand?: string;
   }
 ): Promise<void> {
   const theme = options?.theme ?? 'light';
@@ -379,7 +381,8 @@ export async function exportCurrentSlidePdf(
     issuedDate,
     theme,
     options?.reportSubtitle,
-    options?.unitWord
+    options?.unitWord,
+    options?.footerBrand
   );
 
   const num = String(slideMeta.id + 1).padStart(2, '0');
@@ -394,6 +397,7 @@ export interface FullPdfExportOptions {
   filename?: string;
   reportSubtitle?: string;
   unitWord?: string;
+  footerBrand?: string;
   includeAppendix?: boolean;
   prepareSlide3D: (slideIdx: number) => void;
   setActiveSlideForCapture: (slideIdx: number) => void;
@@ -407,6 +411,7 @@ export async function exportFullPresentationPdf({
   filename = 'Reporte_Coquimbo_Digital_2026.pdf',
   reportSubtitle = 'La Serena Digital 2026 (14 oct – 14 nov)',
   unitWord = 'Lámina',
+  footerBrand,
   includeAppendix = true,
   prepareSlide3D,
   setActiveSlideForCapture,
@@ -450,7 +455,8 @@ export async function exportFullPresentationPdf({
       issuedDate,
       theme,
       reportSubtitle,
-      unitWord
+      unitWord,
+      footerBrand
     );
   }
 

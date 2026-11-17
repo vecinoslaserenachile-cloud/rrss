@@ -455,6 +455,116 @@ export const PRESENTATION_CHOREOGRAPHY: Record<string, ChoreographyCue[]> = {
       camera: { position: [0, 4.7, 9.8], target: [0, 2.55, 0] },
     },
   ],
+
+  // =========================================================
+  // REPORTE 3: REPORTE DIGITAL NOVIEMBRE 2026 · EDICIÓN N° 3 (5 LÁMINAS)
+  // =========================================================
+  'edicion3-0': [
+    {
+      atProgress: 0,
+      focusBadge: '13 Autoridades Regionales · 28 Días',
+      camera: { position: [0.8, 5.4, 12.8], target: [0.4, 2.35, 0] },
+    },
+    {
+      atProgress: 0.34,
+      focusBadge: '676,6k Me Gusta · 43,4k Comentarios',
+      camera: { position: [-2.1, 4.4, 9.2], target: [-1.4, 2.4, 0] },
+    },
+    {
+      atProgress: 0.68,
+      focusBadge: '0,99 posts/día · 363 piezas auditadas',
+      camera: { position: [3.2, 4.4, 9.4], target: [2.1, 2.3, 0] },
+    },
+  ],
+
+  'edicion3-1': [
+    {
+      atProgress: 0,
+      focusBadge: 'Escalera Ancha en Espiral · 13 Autoridades',
+      highlightRank: null,
+      camera: { position: [0.2, 6.2, 30.2], target: [0.2, 4.25, 0.0] },
+    },
+    {
+      atProgress: 0.24,
+      focusBadge: '#1 Dip. Carolina Tello · Cima del Podio (262k)',
+      highlightRank: 1,
+      camera: { position: [3.5, 13.45, 9.4], target: [3.43, 11.75, 2.0] },
+    },
+    {
+      atProgress: 0.52,
+      focusBadge: '#2 Dip. Daniel Manoucheri · 149k Seg. · 212k Likes',
+      highlightRank: 2,
+      camera: { position: [-0.8, 12.55, 9.2], target: [0.07, 10.85, 1.78] },
+    },
+    {
+      atProgress: 0.78,
+      focusBadge: '#6 Sen. Daniel Núñez · 60 Posts (Ritmo Líder)',
+      highlightRank: 6,
+      camera: { position: [3.0, 9.1, 4.8], target: [3.03, 7.4, -2.58] },
+    },
+  ],
+
+  'edicion3-2': [
+    {
+      atProgress: 0,
+      focusBadge: 'Eficiencia PPI 100% & Formatos',
+      camera: { position: [0.3, 5.2, 12.6], target: [0.3, 2.5, 0] },
+    },
+    {
+      atProgress: 0.25,
+      focusBadge: 'Bernardo Salinas · 57% ER · 100% PPI',
+      camera: { position: [-3.2, 4.8, 8.8], target: [-3.3, 2.95, 0] },
+    },
+    {
+      atProgress: 0.55,
+      focusBadge: 'Eileen Patricia · 100% PPI · 14% ER',
+      camera: { position: [-1.1, 4.6, 8.6], target: [-1.1, 2.75, 0] },
+    },
+    {
+      atProgress: 0.78,
+      focusBadge: 'Videos/Reels 14% ER vs. Carrusels 1,28%',
+      camera: { position: [3.6, 4.5, 9.0], target: [3.2, 2.4, 0] },
+    },
+  ],
+
+  'edicion3-3': [
+    {
+      atProgress: 0,
+      focusBadge: 'Duelo Municipal Conurbación',
+      camera: { position: [0, 5.0, 11.8], target: [0, 2.35, 0] },
+    },
+    {
+      atProgress: 0.28,
+      focusBadge: 'Daniela Norambuena · 34 Posts · 76% PPI · 3.3k Com.',
+      camera: { position: [-2.6, 4.5, 8.6], target: [-2.6, 2.5, 0] },
+    },
+    {
+      atProgress: 0.65,
+      focusBadge: 'Alí Manouchehri · 4,37% ER · 10 Posts · 17% PPI',
+      camera: { position: [2.6, 4.5, 8.6], target: [2.6, 2.5, 0] },
+    },
+  ],
+
+  'edicion3-4': [
+    {
+      atProgress: 0,
+      focusBadge: 'Escalera Espiral · 13 Autoridades',
+      highlightRank: null,
+      camera: { position: [-2.4, 6.2, 31.4], target: [-1.6, 4.1, 0.0] },
+    },
+    {
+      atProgress: 0.3,
+      focusBadge: 'Podio Superior · Tello · Manoucheri · Salinas',
+      highlightRank: 1,
+      camera: { position: [4.6, 13.35, 9.3], target: [4.51, 11.65, 1.9] },
+    },
+    {
+      atProgress: 0.65,
+      focusBadge: 'Alcaldías & Senado Regional',
+      highlightRank: 5,
+      camera: { position: [-0.6, 9.9, 5.5], target: [0.4, 8.25, -1.85] },
+    },
+  ],
 };
 
 export function resolveActiveCue(

@@ -52,3 +52,20 @@ export const BENCHMARK_NARRATIONS: string[] = [
   // Capítulo 7: Resumen Ejecutivo Dual (Cierre de Ambos Reportes)
   'Como cierre final, aquí comparamos ambos estudios cara a cara. En el primer bloque, 20 cuentas de medios y comunidad acumularon más de 3 millones 130 mil me gusta en un mes, con un 1,06 por ciento de engagement. En el segundo bloque de 28 días, las 26 cuentas públicas registraron 478 mil 500 interacciones pero casi duplicaron la intensidad de respuesta con un 1,97 por ciento de engagement y un 75,4 por ciento de sentimiento positivo. Ambos reportes coinciden en la misma receta ganadora: priorizar Reels cortos y estrenar en ventana nocturna a las 21 horas. Puedes volver al inicio de cualquiera de los dos reportes desde los botones en pantalla. Muchas gracias por tu atención.',
 ];
+
+export const EDICION3_NARRATIONS: string[] = [
+  // Lámina 01 (resumen-ejecutivo)
+  'Bienvenidos al Reporte Digital Noviembre 2026. Analizamos el rendimiento real en Instagram de trece autoridades de la Región de Coquimbo —senadores, diputados, el alcalde de Coquimbo y la alcaldesa de La Serena— durante los últimos veintiocho días, evaluando alcance, volumen de reacción y eficiencia algorítmica.',
+
+  // Lámina 02 (podio-interacciones)
+  'En esta escalera en espiral se despliegan las trece autoridades medidas, demostrando que el volumen de reacciones no depende del tamaño de la cuenta. La diputada Carolina Tello lidera en la cima con doscientos sesenta y dos mil Me gusta y casi dieciocho mil comentarios, superando al diputado Daniel Manoucheri, quien concentra la mayor comunidad con ciento cuarenta y nueve mil seguidores pero queda segundo en reacciones. En frecuencia, el senador Daniel Núñez marca el ritmo parlamentario con sesenta publicaciones.',
+
+  // Lámina 03 (eficiencia-algoritmica)
+  'Al medir la eficiencia proporcional respecto a la audiencia base, dos diputados alcanzan el máximo cien por ciento en el Índice de Rendimiento de Página: el diputado Bernardo Salinas, con una extraordinaria tasa de interacción del cincuenta y siete por ciento, y la diputada Eileen Patricia, demostrando que las comunidades parlamentarias acotadas están logrando mayor amplificación orgánica.',
+
+  // Lámina 04 (duelo-conurbado)
+  'En la comparativa municipal de la conurbación, la alcaldesa de La Serena, Daniela Norambuena, sostiene una presencia constante con treinta y cuatro publicaciones y un setenta y seis por ciento de rendimiento, capitalizando tres mil trescientos comentarios ciudadanos. En contraste, el alcalde de Coquimbo, Alí Manouchehri, obtiene buena respuesta por publicación, pero su baja frecuencia de diez posts limita su índice general al diecisiete por ciento.',
+
+  // Lámina 05 (ranking-completo)
+  'Finalmente, el tablero consolidado de senadores, diputados y jefes comunales confirma una brecha clara entre quienes logran conversación ciudadana activa y aquellos perfiles que mantienen audiencias pasivas o baja frecuencia de publicación. Puedes explorar cada indicador directamente en la tabla interactiva.',
+];

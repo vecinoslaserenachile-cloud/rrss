@@ -17,7 +17,7 @@ export type ExportMode = 'full-pdf' | 'current-pdf' | 'current-png';
 interface ExportReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reportType: 'ecosistema' | 'benchmark';
+  reportType: 'ecosistema' | 'benchmark' | 'edicion3';
   totalItems: number;
   activeSlideMeta: ExportableSlideMeta;
   isExporting: boolean;
@@ -58,10 +58,13 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   if (!isOpen) return null;
 
   const isBenchmark = reportType === 'benchmark';
+  const isEdicion3 = reportType === 'edicion3';
   const unitLabel = isBenchmark ? 'Capítulo' : 'Lámina';
   const shareUrl = isBenchmark
     ? `${CLOUDFLARE_REPORT_ORIGIN}/?reporte=benchmark&capitulo=${activeSlideMeta.slug}`
-    : `${CLOUDFLARE_REPORT_ORIGIN}/?lamina=${activeSlideMeta.slug}`;
+    : isEdicion3
+      ? `${CLOUDFLARE_REPORT_ORIGIN}/?reporte=edicion3&lamina=${activeSlideMeta.slug}`
+      : `${CLOUDFLARE_REPORT_ORIGIN}/?lamina=${activeSlideMeta.slug}`;
 
   const progressPct =
     progress && progress.total > 0
@@ -96,7 +99,11 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
         <div className="flex items-start justify-between gap-4 border-b border-slate-900/10 pb-4">
           <div>
             <p className="text-xs font-semibold tracking-wide text-[#0284C7]">
-              REPORTE.VECINOSLASERENA.CL · {isBenchmark ? 'BENCHMARK 3D' : 'ECOSISTEMA INSTAGRAM'}
+              {isBenchmark
+                ? 'REPORTE.VECINOSLASERENA.CL · BENCHMARK 3D'
+                : isEdicion3
+                  ? 'REPORTE DIGITAL NOVIEMBRE 2026 · EDICIÓN N° 3'
+                  : 'REPORTE.VECINOSLASERENA.CL · ECOSISTEMA INSTAGRAM'}
             </p>
             <h2
               id="export-modal-title"
@@ -173,13 +180,19 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                   Reporte Ejecutivo Completo (PDF)
                 </span>
                 <span className="font-mono-tabular rounded-md bg-[#0284C7] px-2 py-0.5 text-[11px] font-semibold text-white">
-                  {isBenchmark ? `${totalItems} capítulos 3D` : `${totalItems} láminas + anexo`}
+                  {isBenchmark
+                    ? `${totalItems} capítulos 3D`
+                    : isEdicion3
+                      ? `${totalItems} láminas 3D`
+                      : `${totalItems} láminas + anexo`}
                 </span>
               </div>
               <p className="mt-1 text-xs leading-relaxed text-slate-600">
                 {isBenchmark
                   ? `Captura los ${totalItems} capítulos de telemetría 3D en formato apaisado 16:9 listo para directorio.`
-                  : `Captura las ${totalItems} visualizaciones 3D en formato apaisado 16:9 e incluye página anexa con los rankings completos.`}
+                  : isEdicion3
+                    ? `Captura las ${totalItems} láminas de inteligencia regional 3D de la Edición N° 3 en formato 16:9.`
+                    : `Captura las ${totalItems} visualizaciones 3D en formato apaisado 16:9 e incluye página anexa con los rankings completos.`}
               </p>
             </div>
           </button>
